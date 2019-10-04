@@ -1,0 +1,5 @@
+[current]
+Game: FFX
+Episode: 1
+Loop: 1
+Position: 6
