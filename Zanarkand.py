@@ -36,6 +36,45 @@ def test_default():
     default.terminate()
 '''
 
+def get_episode_id(playlist, episode):
+    ytdl_options = {"simulate": True,
+                    "quiet": True,
+                    "playlist_items": str(episode)}
+    ytdl = youtube_dl.YoutubeDL(ytdl_options)
+    episode_information = ytdl.extract_info("https://www.youtube.com/playlist?list=" + playlist)
+    if episode_information['entries']:
+        return episode_information['entries'][0]['id']
+    else:
+        return None
+
+def yt_download_episode(playlist, episode, media_folder):
+    '''
+    ytdl_options_video = {"format": "bestvideo",
+            "quiet": True,
+            "outtmpl": media_folder + "%(id)s.v"
+            "playlist_itmes": str(episode)}
+    ytdl_v = youtube_dl.YoutubeDL(ytdl_options_video)
+    ytdl_v.download(["https://www.youtube.com/playlist?list=" + playlist])
+    ytdl_options_audio = {"format": "bestaudio",
+            "quiet": True,
+            "outtmpl": media_folder + "%(id)s.a"
+            "playlist_itmes": str(episode)}
+    ytdl_a = youtube_dl.YoutubeDL(ytdl_options_audio)
+    ytdl_a.download(["https://www.youtube.com/playlist?list=" + playlist])
+    '''
+    for _ in xrange(5):
+        print("Downloading episode {} from playlist {} to {}".format(episode, playlist, media_folder))
+        time.sleep(1)
+    return
+
+def stream_video(episode):
+    '''
+    '''
+    for _ in xrange(10):
+        print("Streaming episode {}".format(episode))
+        time.sleep(0.5)
+    return
+
 def build_playlist(playlist_file):
     game_dict = {}
     game_list = []
@@ -78,9 +117,10 @@ def main():
                         "OverlayImage": "/home/Zanarkand/resources/1080overlay.png",
                         "PlaylistsFile": "/etc/zanarkand/playlist.conf",
                         "CurrentStatusFile": "/etc/Zanarkand/current_status.txt",
-                        "DefaultVideoFile": "/etc/Zanarkand/default/default.v",
-                        "DefaultAudioFile": "/etc/Zanarkand/default/default.a",
-                        "LogFile": "/home/rehlj/ZanarkandPt2/test_log.log"}
+                        "DefaultVideoID": "default",
+                        "LogFile": "/home/rehlj/ZanarkandPt2/test_log.log",
+                        "MediaFolder": "/home/rehlj/ZanarkandPt2/media",
+                        "NumberOfDownloads": 3}
 
     zanarkand_config = SafeConfigParser(zanarkand_defaults)
     try:
@@ -114,12 +154,17 @@ def main():
     # Stream Config
     playlists = zanarkand_config.get("Zanarkand", "PlaylistsFile")
     current_status = zanarkand_config.get("Zanarkand", "CurrentStatusFile")
-    default_video = zanarkand_config.get("Zanarkand", "DefaultVideoFile")
-    default_audio = zanarkand_config.get("Zanarkand", "DefaultAudioFile")
+    default_video_id = zanarkand_config.get("Zanarkand", "DefaultVideoID")
     log_destination = zanarkand_config.get("Zanarkand", "LogFile")
+    media_folder = zanarkand_config.get("Zanarkand", "MediaFolder")
+    number_of_downloads = zanarkand_config.getint("Zanarkand", "NumberOfDownloads")
+
+    media_folder = media_folder + "/" if not media_folder.endswith('/') else media_folder
+    if not os.path.exists(media_folder):
+        print("Media folder ({}) not found.".format(media_folder))
 
     # Check existance of files
-    config_files = [ffmpeg_overlay, playlists, default_video, default_audio]
+    config_files = [ffmpeg_overlay, playlists, default_video_id + ".v", default_video_id + ".a"]
     found_files = True
     for f in config_files: 
         if not os.path.exists(f):
@@ -169,7 +214,60 @@ def main():
     for _ in xrange(position):
         current_game = game_cycle.next()
     
-    print "current game: {}".format(current_game)
+    print "Current Game: {}".format(current_game)
+    print "Current Episode: {}".format(episode)
+    print "Current Loop: {}".format(loop)
+    print "Current Position: {}".format(position)
+
+    episode_id = ""
+    playlist = games_configs.get(current_game, "Playlist")
+
+    while current_game:
+        if not episode_id:
+            episode_id = get_episode_id(playlist, episode)
+        if not os.path.exists(media_folder + episode_id + ".v") or not os.path.exists(media_folder + episode_id + ".a"):
+            default_stream = Process(target=stream_video, args=(default_video_id,))
+            default_stream.start()
+            download_episode = Process(target=yt_download_episode, args=(playlist, episode_id, media_folder,))
+            download_episode.start()
+            download_episode.join()
+            default_stream.terminate()
+        streaming = Process(target=stream_video, args=(episode_id,))
+        streaming.start()
+        current_video.set("current", "Game", game)
+        current_video.set("current", "Episode", str(episode))
+        current_video.set("current", "Loop", str(loop))
+        current_video.set("current", "Position", str(position))
+        i = 1
+        download_playlist = playlist
+        download_episode_number = episode
+        while i <= number_of_downloads:
+            download_episode_number = download_episode_number + 1
+            download_episode_id = get_episode_id(download_playlist, download_episode_number)
+            if not download_episode_id:
+                if i == 1:
+                    if loop == games_config.get(current_game, "NumberOfLoops"):
+                      current_game = game_cycle.next()
+                      download_playlist = games_config.get(current_game, "Playlist")
+                      loop = 1
+                    episode = 0
+                    download_episode_number = 0
+                else:
+                    if loop == games_config.get(current_game, "NumberOfLoops"):
+                        download_playlist = games_config.get(playlist_games[(playlist_games.index(current_game) + 1) % len(playlist_games)], "Playlist") 
+                    download_episode_number = 0
+            else:
+                download_episode_process = Process(target=yt_download_episode, args=(playlist, download_episode_id, media_folder,))
+                download_episode_process.start()
+                i = i + 1
+        streaming.join()
+        episode = episode + 1
+        episode_id = get_episode_id(playlist, episode)
+        try:
+            os.remove(media_folder + episode_id + ".v")
+            os.remove(media_folder + episode_id + ".a")
+        except OSError as e:
+            print("Could not remove the media files for {}: {}".format(episode_id, e))
 
 
 if __name__ == "__main__":
