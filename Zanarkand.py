@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import unicode_literals
 #TODO: - Check to see if ffmpeg can start a video on a specific timestamp
 #      - Add in limited number of yt-dl requests
 #      - Add ability to auto-update
@@ -12,29 +13,7 @@ import youtube_dl
 from itertools import cycle
 from argparse import ArgumentParser
 from multiprocessing import Process
-from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError
-
-'''
-def count_to_fifteen():
-    for i in xrange(16):
-        print "{}".format(i)
-        time.sleep(1)
-    return
-
-def default_stream():
-    for i in xrange(100):
-        print "    Streaming default"
-        time.sleep(0.5)
-    return
-
-def test_default():
-    count = Process(target=count_to_fifteen)
-    count.start()
-    default = Process(target=default_stream)
-    default.start()
-    count.join()
-    default.terminate()
-'''
+from ConfigParser import ConfigParser, SafeConfigParser, NoSectionError, NoOptionError
 
 def get_episode_id(playlist, episode):
     ytdl_options = {"simulate": True,
@@ -48,31 +27,28 @@ def get_episode_id(playlist, episode):
         return None
 
 def yt_download_episode(playlist, episode, media_folder):
-    '''
+    print("Downloading episode {}.".format(episode))
     ytdl_options_video = {"format": "bestvideo",
-            "quiet": True,
-            "outtmpl": media_folder + "%(id)s.v"
-            "playlist_itmes": str(episode)}
+                          "quiet": True,
+                          "outtmpl": media_folder + "%(id)s.v",
+                          "playlist_items": str(episode)}
     ytdl_v = youtube_dl.YoutubeDL(ytdl_options_video)
     ytdl_v.download(["https://www.youtube.com/playlist?list=" + playlist])
     ytdl_options_audio = {"format": "bestaudio",
-            "quiet": True,
-            "outtmpl": media_folder + "%(id)s.a"
-            "playlist_itmes": str(episode)}
+                          "quiet": True,
+                          "outtmpl": media_folder + "%(id)s.a",
+                          "playlist_items": str(episode)}
     ytdl_a = youtube_dl.YoutubeDL(ytdl_options_audio)
     ytdl_a.download(["https://www.youtube.com/playlist?list=" + playlist])
-    '''
-    for _ in xrange(5):
-        print("Downloading episode {} from playlist {} to {}".format(episode, playlist, media_folder))
-        time.sleep(1)
+    print("Download of episode {} complete.".format(episode))
     return
 
 def stream_video(episode):
     '''
     '''
-    for _ in xrange(10):
-        print("Streaming episode {}".format(episode))
-        time.sleep(0.5)
+    print("Starting stream of episode {}.".format(episode))
+    time.sleep(240)
+    print("Ending stream of episode {}.".format(episode))
     return
 
 def build_playlist(playlist_file):
@@ -105,22 +81,22 @@ def main():
     args = parser.parse_args()
 
     zanarkand_defaults = {"FfmpegPreset": "superfast",
-                        "FfmpegCrf": 18,
-                        "FfmpegMinrate": "5000K",
-                        "FfmpegMaxrate": "6000K",
-                        "FfmpegBufsize": "12000K",
-                        "Resolution": 1080,
-                        "ViewportWidth": 1760,
-                        "ViewportHeight": 990,
-                        "ViewportX": 0,
-                        "ViewportY": 90,
-                        "OverlayImage": "/home/Zanarkand/resources/1080overlay.png",
-                        "PlaylistsFile": "/etc/zanarkand/playlist.conf",
-                        "CurrentStatusFile": "/etc/Zanarkand/current_status.txt",
-                        "DefaultVideoID": "default",
-                        "LogFile": "/home/rehlj/ZanarkandPt2/test_log.log",
-                        "MediaFolder": "/home/rehlj/ZanarkandPt2/media",
-                        "NumberOfDownloads": 3}
+                          "FfmpegCrf": 18,
+                          "FfmpegMinrate": "5000K",
+                          "FfmpegMaxrate": "6000K",
+                          "FfmpegBufsize": "12000K",
+                          "Resolution": 1080,
+                          "ViewportWidth": 1760,
+                          "ViewportHeight": 990,
+                          "ViewportX": 0,
+                          "ViewportY": 90,
+                          "OverlayImage": "/home/Zanarkand/resources/1080overlay.png",
+                          "PlaylistsFile": "/etc/zanarkand/playlist.conf",
+                          "CurrentStatusFile": "/etc/Zanarkand/current_status.txt",
+                          "DefaultVideoID": "default",
+                          "LogFile": "/home/rehlj/ZanarkandPt2/test_log.log",
+                          "MediaFolder": "/home/rehlj/ZanarkandPt2/media",
+                          "NumberOfDownloads": 3}
 
     zanarkand_config = SafeConfigParser(zanarkand_defaults)
     try:
@@ -199,7 +175,7 @@ def main():
         loop = 1
         position = 1
     else:
-        current_video = SafeConfigParser()
+        current_video = ConfigParser()
         try:
             current_video.read(current_status)
             game = current_video.get("current", "Game")
@@ -223,51 +199,72 @@ def main():
     playlist = games_configs.get(current_game, "Playlist")
 
     while current_game:
+        #Update current config
+        current_video.set("current", "Game", game)
+        current_video.set("current", "Episode", str(episode))
+        current_video.set("current", "Loop", str(loop))
+        current_video.set("current", "Position", str(position))
+        with open(current_status, 'w') as f:
+            current_video.write(f)
+
         if not episode_id:
             episode_id = get_episode_id(playlist, episode)
         if not os.path.exists(media_folder + episode_id + ".v") or not os.path.exists(media_folder + episode_id + ".a"):
             default_stream = Process(target=stream_video, args=(default_video_id,))
             default_stream.start()
-            download_episode = Process(target=yt_download_episode, args=(playlist, episode_id, media_folder,))
+            download_episode = Process(target=yt_download_episode, args=(playlist, episode, media_folder,))
             download_episode.start()
             download_episode.join()
             default_stream.terminate()
         streaming = Process(target=stream_video, args=(episode_id,))
         streaming.start()
-        current_video.set("current", "Game", game)
-        current_video.set("current", "Episode", str(episode))
-        current_video.set("current", "Loop", str(loop))
-        current_video.set("current", "Position", str(position))
+
+        # Download next N episodes
         i = 1
         download_playlist = playlist
         download_episode_number = episode
+        next_episode_id = ""
         while i <= number_of_downloads:
             download_episode_number = download_episode_number + 1
             download_episode_id = get_episode_id(download_playlist, download_episode_number)
             if not download_episode_id:
                 if i == 1:
-                    if loop == games_config.get(current_game, "NumberOfLoops"):
-                      current_game = game_cycle.next()
-                      download_playlist = games_config.get(current_game, "Playlist")
-                      loop = 1
+                    print("Current loop: {} | Number of loops: {}.".format(loop, games_configs.get(current_game, "NumberOfLoops")))
+                    if loop == int(games_configs.get(current_game, "NumberOfLoops")):
+                        print("Switching to next game")
+                        current_game = game_cycle.next()
+                        download_playlist = games_configs.get(current_game, "Playlist")
+                        loop = 1
+                        position = playlist_games.index(current_game) + 1
+                    else:
+                        loop += 1
                     episode = 0
                     download_episode_number = 0
                 else:
-                    if loop == games_config.get(current_game, "NumberOfLoops"):
-                        download_playlist = games_config.get(playlist_games[(playlist_games.index(current_game) + 1) % len(playlist_games)], "Playlist") 
+                    if loop == games_configs.get(current_game, "NumberOfLoops"):
+                        download_playlist = games_configs.get(playlist_games[(playlist_games.index(current_game) + 1) % len(playlist_games)], "Playlist") 
                     download_episode_number = 0
             else:
-                download_episode_process = Process(target=yt_download_episode, args=(playlist, download_episode_id, media_folder,))
-                download_episode_process.start()
-                i = i + 1
+                if i == 1:
+                    next_episode_id = download_episode_id
+                if not os.path.exists(media_folder + download_episode_id + ".v") or not os.path.exists(media_folder + download_episode_id + ".a"):
+                    download_episode_process = Process(target=yt_download_episode, args=(playlist, download_episode_number, media_folder,))
+                    download_episode_process.start()
+                i += 1
+
+        # Wait until Stream ends
         streaming.join()
-        episode = episode + 1
-        episode_id = get_episode_id(playlist, episode)
+
+        # Remove file
         try:
             os.remove(media_folder + episode_id + ".v")
             os.remove(media_folder + episode_id + ".a")
         except OSError as e:
             print("Could not remove the media files for {}: {}".format(episode_id, e))
+
+        # Set up for next episode
+        episode = episode + 1
+        episode_id = next_episode_id
 
 
 if __name__ == "__main__":
