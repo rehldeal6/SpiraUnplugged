@@ -17,11 +17,10 @@ class Game:
     def __init__(self, config, name):
         self.name = name
         self.playlist_id = config.get(name, "PlaylistID")
-        self.loops = config.get(name, "NumberOfLoops")
+        self.loops = config.getint(name, "NumberOfLoops")
         ydl = youtube_dl.YoutubeDL({'extract_flat': True, 'quiet': True})
         playlist_information = ydl.extract_info("https://www.youtube.com/playlist?list={}".format(self.playlist_id), download=False)
         self.total_episodes = len(playlist_information['entries'])
-        print("{} has {} episodes".format(name, self.total_episodes))
 
 class Stream:
     def __init__(self, config):
@@ -46,6 +45,7 @@ class Stream:
         self.episode = status_conf.getint("current", "Episode") if status_conf.has_option("current", "Episode") else 1
         self.loop = status_conf.getint("current", "Loop") if status_conf.has_option("current", "Loop") else 1
         self.position = status_conf.getint("current", "Position") if status_conf.has_option("current", "Position") else 1
+        return
 
     def next(self):
         if self.episode < self.game.total_episodes:
@@ -57,9 +57,11 @@ class Stream:
                 self.loop = 1
                 if self.position == self.number_of_games:
                     self.position = 1
-                self.position += 1
+                else:
+                    self.position += 1
             else:
                 self.loop += 1
+        return
 
     def get_next_game_name(self):
         if self.position == self.number_of_games:
@@ -71,12 +73,15 @@ class Stream:
         for i in xrange(1, n+1):
             download_episode = self.episode + i
             if download_episode > self.game.total_episodes:
+                download_episode = download_episode % self.game.total_episodes
                 if not self.next_game or (self.next_game.name != self.get_next_game_name()):
                     self.next_game = Game(self.playlist_file, self.get_next_game_name())
-            if download_episode <= self.game.total_episodes:
-                list_of_episodes.append((self.game.name, self.game.playlist_id, download_episode))
+                if self.loop == self.game.loops:
+                    list_of_episodes.append((self.next_game.name, self.next_game.playlist_id, download_episode))
+                else:
+                    list_of_episodes.append((self.game.name, self.game.playlist_id, download_episode))
             else:
-                list_of_episodes.append((self.next_game.name, self.next_game.playlist_id, download_episode % self.game.total_episodes))
+                list_of_episodes.append((self.game.name, self.game.playlist_id, download_episode))
         return list_of_episodes
 
     def current_video_exists(self, media_folder):
@@ -86,6 +91,9 @@ class Stream:
 
 
 def yt_download_episode(playlist, game, episode, media_folder):
+    if youtube_dl.utils.ytdl_is_updateable():
+        print("Please update youtube-dl!")
+        return
     print("Downloading {}-E{}.".format(game, episode))
     ytdl_options_video = {"format": "bestvideo",
                           "quiet": True,
@@ -99,16 +107,19 @@ def yt_download_episode(playlist, game, episode, media_folder):
                           "playlist_items": str(episode)}
     ytdl_a = youtube_dl.YoutubeDL(ytdl_options_audio)
     ytdl_a.download(["https://www.youtube.com/playlist?list=" + playlist])
-    print("Download of episode {} complete.".format(episode))
+    print("Download of {}-E{} complete.".format(game, episode))
     return
 
 def stream_video(game_name, episode_number):
     '''
     '''
     print("Starting stream of episode {}-E{}.".format(game_name, episode_number))
-    time.sleep(240)
+    time.sleep(360)
     print("Ending stream of episode {}-E{}.".format(game_name, episode_number))
     return
+
+def video_files_exist(media_folder, game_name, episode_number):
+    return os.path.exists("{}{}-E{}.v".format(media_folder, game_name, episode_number)) and os.path.exists("{}{}-E{}.a".format(media_folder, game_name, episode_number))
 
 def main():
     parser = ArgumentParser()
@@ -187,7 +198,7 @@ def main():
         with open(current_status, 'w') as f:
             current_video.write(f)
         
-        if not stream.current_video_exists(media_folder):
+        if not video_files_exist(media_folder, stream.game.name, stream.episode):
             default_stream = Process(target=stream_video, args=("default", 0))
             default_stream.start()
             download_episode = Process(target=yt_download_episode, args=(stream.game.playlist_id, stream.game.name, stream.episode, media_folder,))
@@ -199,8 +210,9 @@ def main():
 
         # Download next N episodes
         for download_game, download_playlist, download_episode in stream.get_next_n_episodes(number_of_downloads):
-            download = Process(target=yt_download_episode, args=(download_playlist, download_game, download_episode, media_folder,))
-            download.start()
+            if not video_files_exist(media_folder, download_game, download_episode):
+                download = Process(target=yt_download_episode, args=(download_playlist, download_game, download_episode, media_folder,))
+                download.start()
 
         # Wait until Stream ends
         streaming.join()
