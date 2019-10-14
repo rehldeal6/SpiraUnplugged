@@ -1,5 +1,6 @@
 [current]
-Game: FFX
-Episode: 1
-Loop: 1
-Position: 6
+game = FF15
+episode = 1
+loop = 2
+position = 14
+
