@@ -7,11 +7,13 @@ from __future__ import unicode_literals
 import os
 import sys
 import time
-import ffmpeg
-import youtube_dl
+import random
 from argparse import ArgumentParser
 from multiprocessing import Process
 from ConfigParser import ConfigParser, SafeConfigParser, NoSectionError, NoOptionError, ParsingError
+
+import ffmpeg
+import youtube_dl
 
 class Game:
     def __init__(self, config, name):
@@ -110,12 +112,20 @@ def yt_download_episode(playlist, game, episode, media_folder):
     print("Download of {}-E{} complete.".format(game, episode))
     return
 
-def stream_video(game_name, episode_number):
-    '''
-    '''
-    print("Starting stream of episode {}-E{}.".format(game_name, episode_number))
-    time.sleep(360)
-    print("Ending stream of episode {}-E{}.".format(game_name, episode_number))
+def stream_standby(standby_directory, youtube_key):
+    video = random.choice(os.listdir(standby_directory))
+    while True:
+        run = ffmpeg.input(standby_directory + video).output("rtmp://a.rtmp.youtube.com/live2/{}".format(youtube_key), format="flv").run_async(quiet=True)
+        run.wait()
+    return
+
+def stream_video(media_folder, game_name, episode_number, overlay, youtube_key):
+    print("Entering stream_video")
+    overlay_input = ffmpeg.input(media_folder + overlay)
+    video = ffmpeg.input("{}{}-E{}.v".format(media_folder, game_name, episode_number)).video.filter("scale", 1760, 990).filter("pad", 1920, 1080, 0, 90) .overlay(overlay_input)
+    audio = ffmpeg.input("{}{}-E{}.a".format(media_folder, game_name, episode_number))
+    run = ffmpeg.output(video, audio, "rtmp://a.rtmp.youtube.com/live2/{}".format(youtube_key), format="flv").run_async(quiet=True)
+    run.wait()
     return
 
 def video_files_exist(media_folder, game_name, episode_number):
@@ -129,9 +139,11 @@ def main():
     zanarkand_defaults = {"PlaylistsFile": "/etc/zanarkand/playlist.conf",
                           "CurrentStatusFile": "/etc/Zanarkand/current_status.txt",
                           "DefaultVideoID": "default",
-                          "LogFile": "/home/rehlj/ZanarkandPt2/test_log.log",
-                          "MediaFolder": "/home/rehlj/ZanarkandPt2/media",
-                          "NumberOfDownloads": 3}
+                          "LogFile": "/home/rehlj/SpiraUnplugged/test_log.log",
+                          "MediaFolder": "/home/rehlj/SpiraUnplugged/media",
+                          "NumberOfDownloads": 3,
+                          "Overlay": "/home/rehlj/SpiraUnplugged/media/1080overlay.png",
+                          "StandbyDirectory": "/home/rehlj/SpiraUnplugged/defaults/"}
 
     zanarkand_config = SafeConfigParser(zanarkand_defaults)
     try:
@@ -142,7 +154,7 @@ def main():
         sys.exit(1)
     # Youtube Key
     try:
-        zanarkand_config.get("youtube", "StreamKey")
+        youtube_key = zanarkand_config.get("youtube", "StreamKey")
     except NoSectionError, NoOptionError:
         print("No streamkey found. Needs to be in the {} file under a section named \"youtube\" with an option named \"StreamKey\"".format(args.config))
         #log(LOG_ERR, "No streamkey found. Needs to be in the {} file under a section named \"youtube\" with an option named \"StreamKey\"".format(args.config))
@@ -154,9 +166,12 @@ def main():
     log_destination = zanarkand_config.get("Zanarkand", "LogFile")
     media_folder = zanarkand_config.get("Zanarkand", "MediaFolder")
     number_of_downloads = zanarkand_config.getint("Zanarkand", "NumberOfDownloads")
+    overlay = zanarkand_config.get("Zanarkand", "Overlay")
+    standby_directory = zanarkand_config.get("Zanarkand", "StandbyDirectory")
 
     ### TODO: Set up logging
 
+    standby_directory = standby_directory + "/" if not standby_directory.endswith('/') else standby_directory
     #Check media folder
     media_folder = media_folder + "/" if not media_folder.endswith('/') else media_folder
     if not os.path.exists(media_folder):
@@ -199,13 +214,13 @@ def main():
             current_video.write(f)
         
         if not video_files_exist(media_folder, stream.game.name, stream.episode):
-            default_stream = Process(target=stream_video, args=("default", 0))
+            default_stream = Process(target=stream_standby, args=(standby_directory, youtube_key))
             default_stream.start()
             download_episode = Process(target=yt_download_episode, args=(stream.game.playlist_id, stream.game.name, stream.episode, media_folder,))
             download_episode.start()
             download_episode.join()
             default_stream.terminate()
-        streaming = Process(target=stream_video, args=(stream.game.name, stream.episode,))
+        streaming = Process(target=stream_video, args=(media_folder, stream.game.name, stream.episode, overlay, youtube_key))
         streaming.start()
 
         # Download next N episodes
