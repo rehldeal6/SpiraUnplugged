@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import random
+from signal import SIGKILL
 from argparse import ArgumentParser
 from multiprocessing import Process
 from ConfigParser import ConfigParser, SafeConfigParser, NoSectionError, NoOptionError, ParsingError
@@ -112,20 +113,53 @@ def yt_download_episode(playlist, game, episode, media_folder):
     print("Download of {}-E{} complete.".format(game, episode))
     return
 
-def stream_standby(standby_directory, youtube_key):
+def stream_standby(standby_directory, ffmpeg_opts):
     video = random.choice(os.listdir(standby_directory))
+    print("Video chosen: {}{}".format(standby_directory, video))
+    print("ffmpeg options: {}".format(ffmpeg_opts))
     while True:
-        run = ffmpeg.input(standby_directory + video).output("rtmp://a.rtmp.youtube.com/live2/{}".format(youtube_key), format="flv").run_async(quiet=True)
-        run.wait()
+        try: 
+            ffmpeg.input(standby_directory + video, re = None).output(ffmpeg_opts['filename'],
+                                                           format=ffmpeg_opts['format'],
+                                                           vcodec = "libx264",
+                                                           acodec = "libmp3lame",
+                                                           minrate = ffmpeg_opts['minrate'],
+                                                           maxrate = ffmpeg_opts['maxrate'],
+                                                           crf = ffmpeg_opts['crf'],
+                                                           preset = ffmpeg_opts['preset'],
+                                                           audio_bitrate = "128k",
+                                                           ar = "44100",
+                                                           g = "30").run(quiet=True)
+        except ffmpeg.Error as err:
+            print("Error while streaming: {}".format(err))
+        #run = ffmpeg.input(standby_directory + video).output("rtmp://a.rtmp.youtube.com/live2/{}".format(youtube_key), format="flv").run_async(quiet=True)
+        #run.wait()
     return
 
-def stream_video(media_folder, game_name, episode_number, overlay, youtube_key):
-    print("Entering stream_video")
-    overlay_input = ffmpeg.input(media_folder + overlay)
-    video = ffmpeg.input("{}{}-E{}.v".format(media_folder, game_name, episode_number)).video.filter("scale", 1760, 990).filter("pad", 1920, 1080, 0, 90) .overlay(overlay_input)
-    audio = ffmpeg.input("{}{}-E{}.a".format(media_folder, game_name, episode_number))
-    run = ffmpeg.output(video, audio, "rtmp://a.rtmp.youtube.com/live2/{}".format(youtube_key), format="flv").run_async(quiet=True)
-    run.wait()
+def stream_video(media_folder, game_name, episode_number, overlay, ffmpeg_opts):
+    overlay_input = ffmpeg.input(overlay)
+    video = ffmpeg.input("{}{}-E{}.v".format(media_folder, game_name, episode_number), re = None).video.filter("scale", 1760, 990).filter("pad", 1920, 1080, 0, 90) .overlay(overlay_input)
+    audio = ffmpeg.input("{}{}-E{}.a".format(media_folder, game_name, episode_number), re = None)
+    try:
+        ffmpeg.output(video,
+                      audio,
+                      ffmpeg_opts['filename'],
+                      format = ffmpeg_opts['format'],
+                      vcodec = "libx264",
+                      acodec = "libmp3lame",
+                      minrate = ffmpeg_opts['minrate'],
+                      maxrate = ffmpeg_opts['maxrate'],
+                      bufsize = ffmpeg_opts['bufsize'],
+                      crf = ffmpeg_opts['crf'],
+                      preset = ffmpeg_opts['preset'],
+                      audio_bitrate = "128k",
+                      ar = "44100",
+                      g = "30")\
+              .run(quiet=True)
+    except ffmpeg.Error as err:
+        print("Error while streaming: {}".format(err))
+    #run = ffmpeg.output(video, audio, "rtmp://a.rtmp.youtube.com/live2/{}".format(youtube_key), format="flv").run_async(quiet=True)
+    #run.wait()
     return
 
 def video_files_exist(media_folder, game_name, episode_number):
@@ -168,6 +202,17 @@ def main():
     number_of_downloads = zanarkand_config.getint("Zanarkand", "NumberOfDownloads")
     overlay = zanarkand_config.get("Zanarkand", "Overlay")
     standby_directory = zanarkand_config.get("Zanarkand", "StandbyDirectory")
+
+    #ffmpeg config
+    ffmpeg_opts = {
+            "minrate": zanarkand_config.get("ffmpeg", "MinBitRate") if zanarkand_config.has_option("ffmpeg", "MinBitRate") else "5000K",
+            "maxrate": zanarkand_config.get("ffmpeg", "MaxBitRate") if zanarkand_config.has_option("ffmpeg", "MinBitRate") else "6000K",
+            "bufsize": zanarkand_config.get("ffmpeg", "BufRate") if zanarkand_config.has_option("ffmpeg", "BufRate") else "12000K",
+            "crf": zanarkand_config.get("ffmpeg", "CRF") if zanarkand_config.has_option("ffmpeg", "CRF") else "18",
+            "preset": zanarkand_config.get("ffmpeg", "Preset") if zanarkand_config.has_option("ffmpeg", "Preset") else "superfast",
+            "format": "flv",
+            "filename": "rtmp://a.rtmp.youtube.com/live2/{}".format(youtube_key)}
+
 
     ### TODO: Set up logging
 
@@ -214,13 +259,15 @@ def main():
             current_video.write(f)
         
         if not video_files_exist(media_folder, stream.game.name, stream.episode):
-            default_stream = Process(target=stream_standby, args=(standby_directory, youtube_key))
+            default_stream = Process(target=stream_standby, args=(standby_directory, ffmpeg_opts))
+            default_stream.daemon = True
             default_stream.start()
             download_episode = Process(target=yt_download_episode, args=(stream.game.playlist_id, stream.game.name, stream.episode, media_folder,))
             download_episode.start()
             download_episode.join()
             default_stream.terminate()
-        streaming = Process(target=stream_video, args=(media_folder, stream.game.name, stream.episode, overlay, youtube_key))
+            #os.kill(default_stream.pid, SIGKILL)
+        streaming = Process(target=stream_video, args=(media_folder, stream.game.name, stream.episode, overlay, ffmpeg_opts,))
         streaming.start()
 
         # Download next N episodes
