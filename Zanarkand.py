@@ -8,10 +8,9 @@ import os
 import sys
 import random
 import logging
-from signal import SIGKILL
 from argparse import ArgumentParser
 from multiprocessing import Process
-from ConfigParser import ConfigParser, SafeConfigParser, NoSectionError, NoOptionError, ParsingError
+from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError, ParsingError
 
 import ffmpeg
 import youtube_dl
@@ -41,7 +40,7 @@ class Stream:
         except KeyError:
             logging.error("There's no 'Order' section in the playlist file.")
             sys.exit(4)
-        
+
         self.number_of_games = len(self.playlist.keys())
 
     def update_status(self, status_conf):
@@ -102,11 +101,11 @@ def yt_download_episode(playlist, game, episode, media_folder):
 
     #Video
     if os.path.exists("{}{}-E{}.v.part".format(media_folder, game, episode)):
-        logging.debug("{}{}-E{}.v is partially downloaded. Removing".format(media_folder, game, episode))
+        logging.debug("%s%s-E%s.v is partially downloaded. Removing", media_folder, game, episode)
         try:
             os.remove("{}{}-E{}.v.part".format(media_folder, game, episode))
         except OSError as err:
-            logging.error("Could not remove {}{}-E{}.v.part: {}".format(media_folder, game, episode, err))
+            logging.error("Could not remove %s%s-E%s.v.part: %s", media_folder, game, episode, err)
     if not os.path.exists("{}{}-E{}.v".format(media_folder, game, episode)):
         logging.info("Downloading %s-E%s", game, episode)
         ytdl_options_video = {"format": "bestvideo",
@@ -118,11 +117,11 @@ def yt_download_episode(playlist, game, episode, media_folder):
 
     # Audio
     if os.path.exists("{}{}-E{}.a.part".format(media_folder, game, episode)):
-        logging.debug("{}{}-E{}.a is partially downloaded. Removing".format(media_folder, game, episode))
+        logging.debug("%s%s-E%s.a is partially downloaded. Removing", media_folder, game, episode)
         try:
             os.remove("{}{}-E{}.a.part".format(media_folder, game, episode))
         except OSError as err:
-            logging.error("Could not remove {}{}-E{}.a.part: {}".format(media_folder, game, episode, err))
+            logging.error("Could not remove %s%s-E%s.a.part: %s", media_folder, game, episode, err)
     if not os.path.exists("{}{}-E{}.a".format(media_folder, game, episode)):
         ytdl_options_audio = {"format": "bestaudio",
                               "quiet": True,
@@ -139,41 +138,41 @@ def stream_standby(standby_directory, ffmpeg_opts):
     while True:
         try:
             logging.info("Starting standby video %s", video)
-            ffmpeg.input(standby_directory + video, re = None).output(ffmpeg_opts['filename'],
-                                                           format=ffmpeg_opts['format'],
-                                                           vcodec = "libx264",
-                                                           acodec = "libmp3lame",
-                                                           minrate = ffmpeg_opts['minrate'],
-                                                           maxrate = ffmpeg_opts['maxrate'],
-                                                           crf = ffmpeg_opts['crf'],
-                                                           preset = ffmpeg_opts['preset'],
-                                                           audio_bitrate = "128k",
-                                                           ar = "44100",
-                                                           g = "30").run()#quiet=True)
+            ffmpeg.input(standby_directory + video, re=None).output(ffmpeg_opts['filename'],
+                                                                    format=ffmpeg_opts['format'],
+                                                                    vcodec="libx264",
+                                                                    acodec="libmp3lame",
+                                                                    minrate=ffmpeg_opts['minrate'],
+                                                                    maxrate=ffmpeg_opts['maxrate'],
+                                                                    crf=ffmpeg_opts['crf'],
+                                                                    preset=ffmpeg_opts['preset'],
+                                                                    audio_bitrate="128k",
+                                                                    ar="44100",
+                                                                    g="30").run()#quiet=True)
         except ffmpeg.Error as err:
             logging.error("Error while streaming %s: %s", video, err)
     return
 
 def stream_video(media_folder, game_name, episode_number, overlay, ffmpeg_opts):
     overlay_input = ffmpeg.input(overlay)
-    video = ffmpeg.input("{}{}-E{}.v".format(media_folder, game_name, episode_number), re = None).video.filter("scale", 1760, 990).filter("pad", 1920, 1080, 0, 90) .overlay(overlay_input)
-    audio = ffmpeg.input("{}{}-E{}.a".format(media_folder, game_name, episode_number), re = None)
+    video = ffmpeg.input("{}{}-E{}.v".format(media_folder, game_name, episode_number), re=None).video.filter("scale", 1760, 990).filter("pad", 1920, 1080, 0, 90) .overlay(overlay_input)
+    audio = ffmpeg.input("{}{}-E{}.a".format(media_folder, game_name, episode_number), re=None)
     try:
         logging.info("Starting episode %s-E%s", game_name, episode_number)
         ffmpeg.output(video,
                       audio,
                       ffmpeg_opts['filename'],
-                      format = ffmpeg_opts['format'],
-                      vcodec = ffmpeg_opts['vcodec'],
-                      acodec = ffmpeg_opts['acodec'],
-                      minrate = ffmpeg_opts['minrate'],
-                      maxrate = ffmpeg_opts['maxrate'],
-                      bufsize = ffmpeg_opts['bufsize'],
-                      crf = ffmpeg_opts['crf'],
-                      preset = ffmpeg_opts['preset'],
-                      audio_bitrate = ffmpeg_opts['audio_bitrate'],
-                      ar = ffmpeg_opts['ar'],
-                      g = ffmpeg_opts['g'])\
+                      format=ffmpeg_opts['format'],
+                      vcodec=ffmpeg_opts['vcodec'],
+                      acodec=ffmpeg_opts['acodec'],
+                      minrate=ffmpeg_opts['minrate'],
+                      maxrate=ffmpeg_opts['maxrate'],
+                      bufsize=ffmpeg_opts['bufsize'],
+                      crf=ffmpeg_opts['crf'],
+                      preset=ffmpeg_opts['preset'],
+                      audio_bitrate=ffmpeg_opts['audio_bitrate'],
+                      ar=ffmpeg_opts['ar'],
+                      g=ffmpeg_opts['g'])\
               .run()#quiet=True)
     except ffmpeg.Error as err:
         logging.error("Error while streaming %s-E%s: %s", game_name, episode_number, err)
@@ -192,8 +191,8 @@ def kill_process(parent_pid):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("-c", "--config", help = "Main configuration file location", default = "/opt/Zanarkand/config.conf")
-    parser.add_argument("-d", "--debug", help = "Enabled debug mode", action = "store_true")
+    parser.add_argument("-c", "--config", help="Main configuration file location", default="/opt/Zanarkand/config.conf")
+    parser.add_argument("-d", "--debug", help="Enabled debug mode", action="store_true")
     args = parser.parse_args()
 
     zanarkand_defaults = {
@@ -233,24 +232,23 @@ def main():
     log_level = logging.INFO
     if args.debug:
         log_level = logging.DEBUG
-    logging.basicConfig(level = log_level, filemode = 'a', filename = log_destination, format = '%(asctime)s %(levelname)s: %(message)s', datefmt = '%d-%b-%y %H:%M:%S')
+    logging.basicConfig(level=log_level, filemode='a', filename=log_destination, format='%(asctime)s %(levelname)s: %(message)s', datefmt='%d-%b-%y %H:%M:%S')
     logging.info("Starting Stream...")
 
     #ffmpeg config
     ffmpeg_opts = {
-            "audio_bitrate": zanarkand_config.get("ffmpeg", "AudioBitrate") if zanarkand_config.has_option("ffmpeg", "AudioBitrate") else "128k",
-            "ar": zanarkand_config.get("ffmpeg", "AudioFrequency") if zanarkand_config.has_option("ffmpeg", "AudioFrequency") else "44100",
-            "acodec": zanarkand_config.get("ffmpeg", "AudioCodec") if zanarkand_config.has_option("ffmpeg", "AudioCodec") else "libmp3lame",
-            "vcodec": zanarkand_config.get("ffmpeg", "VideoCodec") if zanarkand_config.has_option("ffmpeg", "VideoCodec") else "libx264",
-            "g": zanarkand_config.get("ffmpeg", "GroupOfPictures") if zanarkand_config.has_option("ffmpeg", "GroupOfPictures") else "30",
-            "minrate": zanarkand_config.get("ffmpeg", "MinBitRate") if zanarkand_config.has_option("ffmpeg", "MinBitRate") else "5000K",
-            "maxrate": zanarkand_config.get("ffmpeg", "MaxBitRate") if zanarkand_config.has_option("ffmpeg", "MinBitRate") else "6000K",
-            "bufsize": zanarkand_config.get("ffmpeg", "BufRate") if zanarkand_config.has_option("ffmpeg", "BufRate") else "12000K",
-            "preset": zanarkand_config.get("ffmpeg", "Preset") if zanarkand_config.has_option("ffmpeg", "Preset") else "superfast",
-            "crf": zanarkand_config.get("ffmpeg", "CRF") if zanarkand_config.has_option("ffmpeg", "CRF") else "18",
-            "filename": "rtmp://a.rtmp.youtube.com/live2/{}".format(youtube_key),
-            "format": "flv"
-            }
+        "audio_bitrate": zanarkand_config.get("ffmpeg", "AudioBitrate") if zanarkand_config.has_option("ffmpeg", "AudioBitrate") else "128k",
+        "ar": zanarkand_config.get("ffmpeg", "AudioFrequency") if zanarkand_config.has_option("ffmpeg", "AudioFrequency") else "44100",
+        "acodec": zanarkand_config.get("ffmpeg", "AudioCodec") if zanarkand_config.has_option("ffmpeg", "AudioCodec") else "libmp3lame",
+        "vcodec": zanarkand_config.get("ffmpeg", "VideoCodec") if zanarkand_config.has_option("ffmpeg", "VideoCodec") else "libx264",
+        "g": zanarkand_config.get("ffmpeg", "GroupOfPictures") if zanarkand_config.has_option("ffmpeg", "GroupOfPictures") else "30",
+        "minrate": zanarkand_config.get("ffmpeg", "MinBitRate") if zanarkand_config.has_option("ffmpeg", "MinBitRate") else "5000K",
+        "maxrate": zanarkand_config.get("ffmpeg", "MaxBitRate") if zanarkand_config.has_option("ffmpeg", "MinBitRate") else "6000K",
+        "bufsize": zanarkand_config.get("ffmpeg", "BufRate") if zanarkand_config.has_option("ffmpeg", "BufRate") else "12000K",
+        "preset": zanarkand_config.get("ffmpeg", "Preset") if zanarkand_config.has_option("ffmpeg", "Preset") else "superfast",
+        "crf": zanarkand_config.get("ffmpeg", "CRF") if zanarkand_config.has_option("ffmpeg", "CRF") else "18",
+        "filename": "rtmp://a.rtmp.youtube.com/live2/{}".format(youtube_key),
+        "format": "flv"}
 
     standby_directory = standby_directory + "/" if not standby_directory.endswith('/') else standby_directory
     #Check media folder
@@ -285,7 +283,7 @@ def main():
         current_video.set("current", "Position", str(stream.position))
         with open(current_status, 'w') as f:
             current_video.write(f)
-        
+
         if not media_files_exist(media_folder, stream.game.name, stream.episode):
             logging.warning("Could not find media files for %s-E%s. Switching to standby", stream.game.name, stream.episode)
             default_stream = Process(target=stream_standby, args=(standby_directory, ffmpeg_opts))
