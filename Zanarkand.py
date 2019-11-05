@@ -59,9 +59,9 @@ class Media:
                 elif self.type == "video":
                     download_url = "https://www.youtube.com/watch?v={}".format(self.id)
                 if extension == "v":
-                    ytdl_options_video["format"] = self.videoid
+                    ytdl_options_video["format"] = str(self.videoid)
                 elif extension == "a":
-                    ytdl_options_video["format"] = self.audioid
+                    ytdl_options_video["format"] = str(self.audioid)
                 ytdl_v = youtube_dl.YoutubeDL(ytdl_options_video)
                 ytdl_v.download([download_url])
         return
@@ -116,8 +116,9 @@ class Stream:
                         download_position += 1
                     download_media = self.media_dictionary[self.order[download_position-1]]
                 download_episode = download_media.beginning
-            Process(target=download_media.download_episode, args=(media_directory, download_episode, webhook_url,)).start().join()
-
+            download = Process(target=download_media.download_episode, args=(media_directory, download_episode, webhook_url,))
+            download.start()
+            download.join()
     
     def stream_video(self, media_directory, overlay, ffmpeg_opts):
         overlay_input = ffmpeg.input(overlay)
@@ -229,7 +230,6 @@ def main():
     # Create Media dictionary
     media_dictionary = {}
     for media_section in config["sections"]:
-        print("Making media object {}".format(media_section))
         media = Media(config["sections"][media_section], media_section)
         media_dictionary[media_section] = media
 
@@ -244,16 +244,11 @@ def main():
     stream = Stream(config.get("order"), media_dictionary, status.get("position", 1), status.get("episode", 1), status.get("loop", 1))
     default_stream = Process(target=stream_standby, args=(default_directory, config["ffmpeg"],))
     previous_media = None
-    print("Media: {}".format(stream.media.name))
-    print("Episode: {}".format(stream.episode))
-    print("Loop: {}".format(stream.loop))
-    print("Position: {}".format(stream.position))
 
     while True:
         if not media_files_exist(media_directory, stream.media.name, stream.episode) or yt_needs_updating():
             logging.warning("Could not find media files for %s-E%s. Switching to standby", stream.media.name, stream.episode)
             if not yt_needs_updating():
-                print("Downloading {}-E{}".format(stream.media.name, stream.episode))
                 download_episode = Process(target=stream.media.download_episode, args=(media_directory, stream.episode, webhook,))
                 download_episode.start()
             while not media_files_exist(media_directory, stream.media.name, stream.episode):
@@ -278,8 +273,8 @@ def main():
         # Delete previous episodes
         if previous_media:
             try:
-                os.remove(media_directory + "{}.v".format(previous_media))
-                os.remove(media_directory + "{}.v".format(previous_media))
+                os.remove("{}.v".format(previous_media))
+                os.remove("{}.a".format(previous_media))
             except OSError as err:
                 logging.error("Could not remove the media files for %s-E%s: %s", stream.media.name, stream.episode, err)
 
