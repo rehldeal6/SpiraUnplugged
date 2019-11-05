@@ -1,0 +1,114 @@
+youtube_key: 32vs-4k2f-wrjz-epcs
+current_status: /home/rehlj/SpiraUnplugged/current_status.yml
+numberofdownloads: 3
+overlay: /home/rehlj/SpiraUnplugged/resources/1080overlay.png
+defaultdirectory: /home/rehlj/SpiraUnplugged/defaults/
+mediadirectory: /home/rehlj/SpiraUnplugged/media/
+logdirectory: /home/rehlj/SpiraUnplugged/logs/
+discordwebhook: https://discordapp.com/api/webhooks/639261337503137799/njlDSkXJ9HVNp88fYq5an0mcy9i1K50kn-a3iKd1ye1lpis9XOF6AmnLS_pBsPyfsBFR
+
+ffmpeg:
+  preset: superfast
+  crf: 18
+  audiobitrate: 128k
+  audiofrequeny: 44100
+  audiocodec: libmp3lame
+  videocodec: libx264
+  groupofpictures: 30
+  minbitrate: 5000K
+  maxbitrate: 6000K
+  bufsize: 12000K
+  resolution: 1080
+  viewportwidth: 1760
+  viewportheight: 990
+  viewportx: 0
+  viewporty: 90
+  format: flv
+
+order:
+ - FF7
+ - FFX
+ - FF8
+ - FFX
+ - FF9
+ - FFX
+ - FFX-2
+ - FF12
+ - FFX
+ - FF13
+ - FF13-2
+ - FFX
+ - FFX-2
+ - FF15
+
+### Template ###
+# [Game Abbreviation] - This is what's referenced in the [Order] section
+# PlaylistID: Playlist ID given by YT (seen in the URL)
+# NumberOfLoops: Number of times to play the series consecutively
+# BeginningEpisode: The first video in the playlist to play
+#   OPTIONAL - Defaulted to 1
+# EndingEpisode: The last video in the playlist to play
+#   OPTIONAL - Defaulted to the last video
+# ExcludeEpisodes: Comma separated list of episode numbers to exclude in the middle of the playlist
+#   OPTIONAL - Defaults to none
+# VideoFormatID: The YT video format ID to download
+#   OPTIONAL - Defaulted to 'bestvideo'
+# AudioFormatID: The YT audio format ID to download
+#   OPTIONAL - Defaulted - 'bestaudio'
+
+sections:
+  FF7:
+    type: playlist
+    id: PL9wpzJw8GKy6jduVjw_TFkQleVQVQmjZ1
+    loops: 2
+    beginning: 2
+  FF8:
+    type: playlist
+    id: PL9wpzJw8GKy7-VIz9_kYjaXYyqEerexxo
+    loops: 2
+  FF9:
+    type: playlist
+    id: PL9wpzJw8GKy7_vGHBnsIf99WoE1PV8fib
+    loops: 2
+  FFX:
+    type: playlist
+    id: PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps
+    ending: 133
+  FFX-2:
+    type: playlist
+    id: PL9wpzJw8GKy4iBmZcKF0HYd8xF0FmBueF
+    exclude:
+      - 83
+      - 84
+      - 85
+      - 86
+      - 87
+      - 88
+      - 89
+      - 90
+      - 91
+      - 92
+      - 93
+      - 94
+      - 95
+      - 96
+      - 97
+  FF12:
+    type: playlist
+    id: PL9wpzJw8GKy4PLI_hOOTLIRbZgc380SoJ
+    ending: 132
+    videoformatid: 137
+  FF13:
+    type: playlist
+    id: PL9wpzJw8GKy5MRpDdYVvssMRgGjVLlA0K
+    loops: 2
+    videoformatid: 137
+  FF13-2:
+    type: playlist
+    id: PL9wpzJw8GKy4XCYWG7RyNv62Y24vgxVcR
+    loops: 2
+    videoformatid: 137
+  FF15:
+    type: playlist
+    id: PL9wpzJw8GKy7Uh35q-_CDXJv_4jf4G8du
+    videoformatid: 137

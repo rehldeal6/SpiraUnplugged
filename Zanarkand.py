@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import unicode_literals
 #TODO: - Check to see if ffmpeg can start a video on a specific timestamp
-#      - Add in limited number of yt-dl requests
+#      - Add in bot to send messages to YT stream chat
 #      - Add ability to auto-update
 
 import os
@@ -10,128 +10,139 @@ import random
 import logging
 from argparse import ArgumentParser
 from multiprocessing import Process
-from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError, ParsingError
 
 import ffmpeg
 import youtube_dl
+from youtube_dl.utils import ytdl_is_updateable as yt_needs_updating
+from yaml import safe_load, YAMLError, safe_dump
 from psutil import Process as p_process
+from discord_webhook import DiscordWebhook
 
-class Game:
+class Media:
     def __init__(self, config, name):
         self.name = name
-        self.playlist_id = config.get(name, "PlaylistID")
-        self.loops = config.getint(name, "NumberOfLoops")
-        ydl = youtube_dl.YoutubeDL({'extract_flat': True, 'quiet': True})
-        playlist_information = ydl.extract_info("https://www.youtube.com/playlist?list={}".format(self.playlist_id), download=False)
-        self.total_episodes = len(playlist_information['entries'])
-
-class Stream:
-    def __init__(self, config):
-        self.game = None
-        self.next_game = None
-        self.episode = None
-        self.loop = None
-        self.position = None
-        self.playlist_file = config
-
         try:
-            self.playlist = dict(config._sections['Order'])
-            del self.playlist['__name__']
-        except KeyError:
-            logging.error("There's no 'Order' section in the playlist file.")
-            sys.exit(4)
-
-        self.number_of_games = len(self.playlist.keys())
-
-    def update_status(self, status_conf):
-        self.game = Game(self.playlist_file, status_conf.get("current", "Game", "FF7"))
-        self.episode = status_conf.getint("current", "Episode") if status_conf.has_option("current", "Episode") else 1
-        self.loop = status_conf.getint("current", "Loop") if status_conf.has_option("current", "Loop") else 1
-        self.position = status_conf.getint("current", "Position") if status_conf.has_option("current", "Position") else 1
+            self.type = config["type"]
+            self.id = config["id"]
+        except KeyError as kerr:
+            logging.error("Required values not specified for %s: %s", name, kerr)
+        self.loops = config.get("loops", 1)
+        self.exclude = config.get("exclude", [])
+        self.audioid = config.get("audioformatid", "bestaudio")
+        self.videoid = config.get("videoformatid", "bestvideo")
+        if self.type == "playlist":
+            self.beginning = config.get("beginning", 1)
+            ydl = youtube_dl.YoutubeDL({'extract_flat': True, 'quiet': True})
+            playlist_information = ydl.extract_info("https://www.youtube.com/playlist?list={}".format(self.id), download=False)
+            self.ending = config.get("ending", len(playlist_information['entries']))
+        elif self.type == "video":
+            self.beginning = 1
+            self.ending = 1
         return
 
+    def download_episode(self, media_directory, episode, webhook_url):
+        for extension in ["v", "a"]:
+            filename = "{}{}-E{}.{}".format(media_directory, self.name, episode, extension)
+            if os.path.exists("{}.part".format(filename)): 
+                logging.debug("%s is partially downloaded. Removing", filename)
+                try:
+                    os.remove("{}.part".format(filename))
+                except OSError as err:
+                    logging.error("Could not remove %s.part: %s", filename, err)
+            if not os.path.exists(filename): 
+                logging.info("Downloading %s", filename)
+                ytdl_options_video = {"quiet": True,
+                                      "outtmpl": filename}
+                if self.type == "playlist":
+                    ytdl_options_video["playlist_items"] = str(episode)
+                    download_url = "https://www.youtube.com/playlist?list={}".format(self.id)
+                elif self.type == "video":
+                    download_url = "https://www.youtube.com/watch?v={}".format(self.id)
+                if extension == "v":
+                    ytdl_options_video["format"] = self.videoid
+                elif extension == "a":
+                    ytdl_options_video["format"] = self.audioid
+                ytdl_v = youtube_dl.YoutubeDL(ytdl_options_video)
+                ytdl_v.download([download_url])
+        return
+
+class Stream:
+    def __init__(self, order, media_dictionary, position, episode, loop):
+        self.media = media_dictionary[order[position - 1]]
+        self.episode = episode
+        self.position = position
+
+        self.loop = loop
+        self.order = order
+        self.media_dictionary = media_dictionary
+
+
     def next(self):
-        if self.episode < self.game.total_episodes:
+        if self.episode < self.media.ending:
             self.episode += 1
+            while self.episode in self.media.exclude and self.episode < self.media.ending:
+                self.episode += 1
         else:
-            self.episode = 1
-            if self.loop == self.game.loops:
-                self.game = self.next_game
+            if self.loop < self.media.loops:
+                self.loop += 1
+            else:
                 self.loop = 1
-                if self.position == self.number_of_games:
+                if self.position == len(self.order):
                     self.position = 1
                 else:
                     self.position += 1
-            else:
-                self.loop += 1
+                self.media = self.media_dictionary[self.order[self.position-1]]
+            self.episode = self.media.beginning
         return
 
-    def get_next_game_name(self):
-        if self.position == self.number_of_games:
-            return self.playlist['1']
-        return self.playlist[str(self.position + 1)]
-
-    def get_next_n_episodes(self, n):
-        list_of_episodes = []
-        for i in xrange(1, n+1):
-            download_episode = self.episode + i
-            if download_episode > self.game.total_episodes:
-                download_episode = download_episode % self.game.total_episodes
-                if not self.next_game or (self.next_game.name != self.get_next_game_name()):
-                    self.next_game = Game(self.playlist_file, self.get_next_game_name())
-                if self.loop == self.game.loops:
-                    list_of_episodes.append((self.next_game.name, self.next_game.playlist_id, download_episode))
-                else:
-                    list_of_episodes.append((self.game.name, self.game.playlist_id, download_episode))
+    def download_next_n_episodes(self, number, media_directory, webhook_url):
+        download_episode = self.episode
+        download_media = self.media
+        download_loop = self.loop
+        download_position = self.position
+        for _ in xrange(1, number + 1):
+            if download_episode < download_media.ending:
+                download_episode += 1
+                while download_episode in download_media.exclude and download_episode < download_media.ending:
+                    download_episode += 1
             else:
-                list_of_episodes.append((self.game.name, self.game.playlist_id, download_episode))
-        return list_of_episodes
+                if download_loop < download_media.loops:
+                    download_loop += 1
+                else:
+                    download_loop = 1
+                    if download_position == len(self.order):
+                        download_position = 1
+                    else:
+                        download_position += 1
+                    download_media = self.media_dictionary[self.order[download_position-1]]
+                download_episode = download_media.beginning
+            Process(target=download_media.download_episode, args=(media_directory, download_episode, webhook_url,)).start().join()
 
-    def current_video_exists(self, media_folder):
-        if not os.path.exists("{}{}-E{}.v".format(media_folder, self.game.name, self.episode)) or not os.path.exists("{}{}-E{}.v".format(media_folder, self.game.name, self.episode)):
-            return False
-        return True
-
-
-def yt_download_episode(playlist, game, episode, media_folder):
-    # Check if needs update
-    if youtube_dl.utils.ytdl_is_updateable():
-        logging.critical("Please update youtube-dl!")
-        #TODO - Add in discord notification
-
-    #Video
-    if os.path.exists("{}{}-E{}.v.part".format(media_folder, game, episode)):
-        logging.debug("%s%s-E%s.v is partially downloaded. Removing", media_folder, game, episode)
+    
+    def stream_video(self, media_directory, overlay, ffmpeg_opts):
+        overlay_input = ffmpeg.input(overlay)
+        video = ffmpeg.input("{}{}-E{}.v".format(media_directory, self.media.name, self.episode), re=None).video.filter("scale", 1760, 990).filter("pad", 1920, 1080, 0, 90) .overlay(overlay_input)
+        audio = ffmpeg.input("{}{}-E{}.a".format(media_directory, self.media.name, self.episode), re=None)
         try:
-            os.remove("{}{}-E{}.v.part".format(media_folder, game, episode))
-        except OSError as err:
-            logging.error("Could not remove %s%s-E%s.v.part: %s", media_folder, game, episode, err)
-    if not os.path.exists("{}{}-E{}.v".format(media_folder, game, episode)):
-        logging.info("Downloading %s-E%s", game, episode)
-        ytdl_options_video = {"format": "bestvideo",
-                              "quiet": True,
-                              "outtmpl": media_folder + "{}-E{}.v".format(game, episode),
-                              "playlist_items": str(episode)}
-        ytdl_v = youtube_dl.YoutubeDL(ytdl_options_video)
-        ytdl_v.download(["https://www.youtube.com/playlist?list=" + playlist])
-
-    # Audio
-    if os.path.exists("{}{}-E{}.a.part".format(media_folder, game, episode)):
-        logging.debug("%s%s-E%s.a is partially downloaded. Removing", media_folder, game, episode)
-        try:
-            os.remove("{}{}-E{}.a.part".format(media_folder, game, episode))
-        except OSError as err:
-            logging.error("Could not remove %s%s-E%s.a.part: %s", media_folder, game, episode, err)
-    if not os.path.exists("{}{}-E{}.a".format(media_folder, game, episode)):
-        ytdl_options_audio = {"format": "bestaudio",
-                              "quiet": True,
-                              "outtmpl": media_folder + "{}-E{}.a".format(game, episode),
-                              "playlist_items": str(episode)}
-        ytdl_a = youtube_dl.YoutubeDL(ytdl_options_audio)
-        ytdl_a.download(["https://www.youtube.com/playlist?list=" + playlist])
-        logging.info("Download of %s-E%s complete", game, episode)
-
-    return
+            logging.info("Starting episode %s-E%s", self.media.name, self.episode)
+            ffmpeg.output(video,
+                          audio,
+                          ffmpeg_opts['filename'],
+                          format=ffmpeg_opts['format'],
+                          vcodec=ffmpeg_opts['videocodec'],
+                          acodec=ffmpeg_opts['audiocodec'],
+                          minrate=ffmpeg_opts['minbitrate'],
+                          maxrate=ffmpeg_opts['maxbitrate'],
+                          bufsize=ffmpeg_opts['bufsize'],
+                          crf=ffmpeg_opts['crf'],
+                          preset=ffmpeg_opts['preset'],
+                          audio_bitrate=ffmpeg_opts['audiobitrate'],
+                          ar=ffmpeg_opts['audiofrequeny'],
+                          g=ffmpeg_opts['groupofpictures'])\
+                  .run(quiet=True)
+        except ffmpeg.Error as err:
+            logging.error("Error while streaming %s-E%s: %s", self.media.name, self.episode, err)
+        return
 
 def stream_standby(standby_directory, ffmpeg_opts):
     video = random.choice(os.listdir(standby_directory))
@@ -140,46 +151,26 @@ def stream_standby(standby_directory, ffmpeg_opts):
             logging.info("Starting standby video %s", video)
             ffmpeg.input(standby_directory + video, re=None).output(ffmpeg_opts['filename'],
                                                                     format=ffmpeg_opts['format'],
-                                                                    vcodec="libx264",
-                                                                    acodec="libmp3lame",
-                                                                    minrate=ffmpeg_opts['minrate'],
-                                                                    maxrate=ffmpeg_opts['maxrate'],
+                                                                    vcodec=ffmpeg_opts['videocodec'],
+                                                                    acodec=ffmpeg_opts['audiocodec'],
+                                                                    minrate=ffmpeg_opts['minbitrate'],
+                                                                    maxrate=ffmpeg_opts['maxbitrate'],
+                                                                    bufsize=ffmpeg_opts['bufsize'],
                                                                     crf=ffmpeg_opts['crf'],
                                                                     preset=ffmpeg_opts['preset'],
-                                                                    audio_bitrate="128k",
-                                                                    ar="44100",
-                                                                    g="30").run()#quiet=True)
+                                                                    audio_bitrate=ffmpeg_opts['audiobitrate'],
+                                                                    ar=ffmpeg_opts['audiofrequeny'],
+                                                                    g=ffmpeg_opts['groupofpictures']).run(quiet=True)
         except ffmpeg.Error as err:
             logging.error("Error while streaming %s: %s", video, err)
     return
 
-def stream_video(media_folder, game_name, episode_number, overlay, ffmpeg_opts):
-    overlay_input = ffmpeg.input(overlay)
-    video = ffmpeg.input("{}{}-E{}.v".format(media_folder, game_name, episode_number), re=None).video.filter("scale", 1760, 990).filter("pad", 1920, 1080, 0, 90) .overlay(overlay_input)
-    audio = ffmpeg.input("{}{}-E{}.a".format(media_folder, game_name, episode_number), re=None)
-    try:
-        logging.info("Starting episode %s-E%s", game_name, episode_number)
-        ffmpeg.output(video,
-                      audio,
-                      ffmpeg_opts['filename'],
-                      format=ffmpeg_opts['format'],
-                      vcodec=ffmpeg_opts['vcodec'],
-                      acodec=ffmpeg_opts['acodec'],
-                      minrate=ffmpeg_opts['minrate'],
-                      maxrate=ffmpeg_opts['maxrate'],
-                      bufsize=ffmpeg_opts['bufsize'],
-                      crf=ffmpeg_opts['crf'],
-                      preset=ffmpeg_opts['preset'],
-                      audio_bitrate=ffmpeg_opts['audio_bitrate'],
-                      ar=ffmpeg_opts['ar'],
-                      g=ffmpeg_opts['g'])\
-              .run()#quiet=True)
-    except ffmpeg.Error as err:
-        logging.error("Error while streaming %s-E%s: %s", game_name, episode_number, err)
-    return
 
-def media_files_exist(media_folder, game_name, episode_number):
-    return os.path.exists("{}{}-E{}.v".format(media_folder, game_name, episode_number)) and os.path.exists("{}{}-E{}.a".format(media_folder, game_name, episode_number))
+
+def media_files_exist(media_directory, media, episode):
+        if not os.path.exists("{}{}-E{}.v".format(media_directory, media, episode)) or not os.path.exists("{}{}-E{}.a".format(media_directory, media, episode)):
+            return False
+        return True
 
 def kill_process(parent_pid):
     logging.info("Stopping standby video")
@@ -195,125 +186,111 @@ def main():
     parser.add_argument("-d", "--debug", help="Enabled debug mode", action="store_true")
     args = parser.parse_args()
 
-    zanarkand_defaults = {
-        "CurrentStatusFile": "/opt/Zanarkand/current_status.txt",
-        "Overlay": "/opt/Zanarkand/media/1080overlay.png",
-        "PlaylistsFile": "/opt/zanarkand/playlist.conf",
-        "LogFile": "/opt/Zanarkand/log/Zanarkand.log",
-        "StandbyDirectory": "/opt/Zanarkand/standby/",
-        "MediaFolder": "/opt/Zanarkand/media",
-        "NumberOfDownloads": 3
-        }
+    with open(args.config, 'r') as input_config:
+        try:
+            config = safe_load(input_config)
+        except YAMLError as yerr:
+            logging.error("Couldn't read the yaml config file: %s", yerr)
+            sys.exit(1)
 
-    zanarkand_config = SafeConfigParser(zanarkand_defaults)
-    try:
-        zanarkand_config.read(args.config)
-    except ParsingError as e:
-        print("Could not open configuration file {}: {}".format(args.config, e))
-        sys.exit(1)
+    #Check mandatory options:
+    for mandatory in ["youtube_key", "mediadirectory", "defaultdirectory", "logdirectory", "order", "sections", "discordwebhook"]:
+        if mandatory not in config:
+            print("Mandatory option %s is not in the config file %s", mandatory, args.config)
+            sys.exit(1)
 
-    # Youtube Key
-    try:
-        youtube_key = zanarkand_config.get("youtube", "StreamKey")
-    except NoSectionError, NoOptionError:
-        print("No streamkey found. Needs to be in the {} file under a section named \"youtube\" with an option named \"StreamKey\"".format(args.config))
-        sys.exit(2)
-
-    # Stream Config
-    current_status = zanarkand_config.get("Zanarkand", "CurrentStatusFile")
-    overlay = zanarkand_config.get("Zanarkand", "Overlay")
-    playlists = zanarkand_config.get("Zanarkand", "PlaylistsFile")
-    log_destination = zanarkand_config.get("Zanarkand", "LogFile")
-    standby_directory = zanarkand_config.get("Zanarkand", "StandbyDirectory")
-    media_folder = zanarkand_config.get("Zanarkand", "MediaFolder")
-    number_of_downloads = zanarkand_config.getint("Zanarkand", "NumberOfDownloads")
+    # Check folders
+    for check_dir in ["defaultdirectory", "logdirectory", "mediadirectory"]:
+        if check_dir in config:
+            config[check_dir] = config[check_dir] + "/" if not config[check_dir].endswith('/') else config[check_dir]
+            if not os.path.exists(config[check_dir]):
+                print("Directory %s specified in the configuration does not exist")
+                sys.exit(1)
+    default_directory = config.get("defaultdirectory", "/opt/Zanarkand/defaults/")
+    log_directory = config.get("logdirectory", "/opt/Zanarkand/logs/")
+    media_directory = config.get("mediadirectory", "/opt/Zanarkand/media/")
 
     # Set up logging
     log_level = logging.INFO
     if args.debug:
         log_level = logging.DEBUG
-    logging.basicConfig(level=log_level, filemode='a', filename=log_destination, format='%(asctime)s %(levelname)s: %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+    logging.basicConfig(level=log_level,
+                        filemode='a',
+                        filename="{}Zanarkand.log".format(log_directory),
+                        format='%(asctime)s %(levelname)s: %(message)s',
+                        datefmt='%d-%b-%y %H:%M:%S')
     logging.info("Starting Stream...")
 
-    #ffmpeg config
-    ffmpeg_opts = {
-        "audio_bitrate": zanarkand_config.get("ffmpeg", "AudioBitrate") if zanarkand_config.has_option("ffmpeg", "AudioBitrate") else "128k",
-        "ar": zanarkand_config.get("ffmpeg", "AudioFrequency") if zanarkand_config.has_option("ffmpeg", "AudioFrequency") else "44100",
-        "acodec": zanarkand_config.get("ffmpeg", "AudioCodec") if zanarkand_config.has_option("ffmpeg", "AudioCodec") else "libmp3lame",
-        "vcodec": zanarkand_config.get("ffmpeg", "VideoCodec") if zanarkand_config.has_option("ffmpeg", "VideoCodec") else "libx264",
-        "g": zanarkand_config.get("ffmpeg", "GroupOfPictures") if zanarkand_config.has_option("ffmpeg", "GroupOfPictures") else "30",
-        "minrate": zanarkand_config.get("ffmpeg", "MinBitRate") if zanarkand_config.has_option("ffmpeg", "MinBitRate") else "5000K",
-        "maxrate": zanarkand_config.get("ffmpeg", "MaxBitRate") if zanarkand_config.has_option("ffmpeg", "MinBitRate") else "6000K",
-        "bufsize": zanarkand_config.get("ffmpeg", "BufRate") if zanarkand_config.has_option("ffmpeg", "BufRate") else "12000K",
-        "preset": zanarkand_config.get("ffmpeg", "Preset") if zanarkand_config.has_option("ffmpeg", "Preset") else "superfast",
-        "crf": zanarkand_config.get("ffmpeg", "CRF") if zanarkand_config.has_option("ffmpeg", "CRF") else "18",
-        "filename": "rtmp://a.rtmp.youtube.com/live2/{}".format(youtube_key),
-        "format": "flv"}
+    #Other settings
+    webhook = config.get("discordwebhook")
+    number_of_downloads = config.get("numberofdownloads", 3)
+    config["ffmpeg"]["filename"] = "rtmp://a.rtmp.youtube.com/live2/{}".format(config["youtube_key"])
 
-    standby_directory = standby_directory + "/" if not standby_directory.endswith('/') else standby_directory
-    #Check media folder
-    media_folder = media_folder + "/" if not media_folder.endswith('/') else media_folder
-    if not os.path.exists(media_folder):
-        logging.error("Media folder not found: %s", media_folder)
-        sys.exit(3)
+    # Create Media dictionary
+    media_dictionary = {}
+    for media_section in config["sections"]:
+        print("Making media object {}".format(media_section))
+        media = Media(config["sections"][media_section], media_section)
+        media_dictionary[media_section] = media
 
-    # Get games list
-    games_configs = SafeConfigParser()
-    try:
-        games_configs.read(playlists)
-    except ParsingError as err:
-        logging.error("Could not parse playlist configuration file %s: %s", playlists, err)
-        sys.exit(1)
+    status_yaml = config.get("current_status", "/opt/Zanarkand/current_status.yaml")
+    with open(status_yaml, 'r') as input_status:
+        try:
+            status = safe_load(input_status)
+        except YAMLError as yerr:
+            logging.error("Couldn't read the yaml config file: %s", yerr)
+            sys.exit(1)
 
-    current_video = SafeConfigParser()
-    try:
-        current_video.read(current_status)
-    except ParsingError as err:
-        logging.error("Could not parse current status file %s: %s", current_status, err)
-        sys.exit(1)
-
-    stream = Stream(games_configs)
-    stream.update_status(current_video)
+    stream = Stream(config.get("order"), media_dictionary, status.get("position", 1), status.get("episode", 1), status.get("loop", 1))
+    default_stream = Process(target=stream_standby, args=(default_directory, config["ffmpeg"],))
+    previous_media = None
+    print("Media: {}".format(stream.media.name))
+    print("Episode: {}".format(stream.episode))
+    print("Loop: {}".format(stream.loop))
+    print("Position: {}".format(stream.position))
 
     while True:
-        #Update current config
-        current_video.set("current", "Game", stream.game.name)
-        current_video.set("current", "Episode", str(stream.episode))
-        current_video.set("current", "Loop", str(stream.loop))
-        current_video.set("current", "Position", str(stream.position))
-        with open(current_status, 'w') as f:
-            current_video.write(f)
-
-        if not media_files_exist(media_folder, stream.game.name, stream.episode):
-            logging.warning("Could not find media files for %s-E%s. Switching to standby", stream.game.name, stream.episode)
-            default_stream = Process(target=stream_standby, args=(standby_directory, ffmpeg_opts))
-            default_stream.daemon = True
-            default_stream.start()
-            download_episode = Process(target=yt_download_episode, args=(stream.game.playlist_id, stream.game.name, stream.episode, media_folder,))
-            download_episode.start()
+        if not media_files_exist(media_directory, stream.media.name, stream.episode) or yt_needs_updating():
+            logging.warning("Could not find media files for %s-E%s. Switching to standby", stream.media.name, stream.episode)
+            if not yt_needs_updating():
+                print("Downloading {}-E{}".format(stream.media.name, stream.episode))
+                download_episode = Process(target=stream.media.download_episode, args=(media_directory, stream.episode, webhook,))
+                download_episode.start()
+            while not media_files_exist(media_directory, stream.media.name, stream.episode):
+                if not default_stream.is_alive():
+                    default_stream.start()
             download_episode.join()
+        if default_stream.is_alive():
             kill_process(default_stream.pid)
-        streaming = Process(target=stream_video, args=(media_folder, stream.game.name, stream.episode, overlay, ffmpeg_opts,))
+        streaming = Process(target=stream.stream_video, args=(media_directory, config.get("overlay"), config["ffmpeg"],))
         streaming.start()
 
+        # Update status
+        current_status = {'game': stream.media.name,
+                          'position': stream.position,
+                          'episode': stream.episode,
+                          'loop': stream.loop}
+        with open(status_yaml, 'w') as write_status:
+            safe_dump(current_status,
+                 write_status,
+                 default_flow_style=False)
+
+        # Delete previous episodes
+        if previous_media:
+            try:
+                os.remove(media_directory + "{}.v".format(previous_media))
+                os.remove(media_directory + "{}.v".format(previous_media))
+            except OSError as err:
+                logging.error("Could not remove the media files for %s-E%s: %s", stream.media.name, stream.episode, err)
+
         # Download next N episodes
-        for download_game, download_playlist, download_episode in stream.get_next_n_episodes(number_of_downloads):
-            if not media_files_exist(media_folder, download_game, download_episode):
-                download = Process(target=yt_download_episode, args=(download_playlist, download_game, download_episode, media_folder,))
-                download.start()
+        Process(target=stream.download_next_n_episodes, args=(number_of_downloads, media_directory, webhook,)).start()
+        # Set up for next episode
+        previous_media = "{}{}-E{}".format(media_directory, stream.media.name, stream.episode)
+        stream.next()
 
         # Wait until Stream ends
         streaming.join()
-
-        # Remove file
-        try:
-            os.remove(media_folder + "{}-E{}.v".format(stream.game.name, stream.episode))
-            os.remove(media_folder + "{}-E{}.a".format(stream.game.name, stream.episode))
-        except OSError as err:
-            logging.error("Could not remove the media files for %s-E%s: %s", stream.game.name, stream.episode, err)
-
-        # Set up for next episode
-        stream.next()
 
 if __name__ == "__main__":
     main()

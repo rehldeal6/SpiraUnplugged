@@ -1,6 +1,0 @@
-[current]
-game = FF15
-episode = 1
-loop = 2
-position = 14
-
