@@ -183,7 +183,7 @@ def kill_process(parent_pid):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("-c", "--config", help="Main configuration file location", default="/opt/Zanarkand/config.conf")
+    parser.add_argument("-c", "--config", help="Main configuration file location", default="/opt/Zanarkand/config.yml")
     parser.add_argument("-d", "--debug", help="Enabled debug mode", action="store_true")
     args = parser.parse_args()
 
