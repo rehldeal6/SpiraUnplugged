@@ -18,7 +18,7 @@ from yaml import safe_load, YAMLError, safe_dump
 from psutil import Process as p_process
 from discord_webhook import DiscordWebhook
 
-class Media:
+class Media(object):
     def __init__(self, config, name):
         self.name = name
         try:
@@ -40,16 +40,16 @@ class Media:
             self.ending = 1
         return
 
-    def download_episode(self, media_directory, episode, webhook_url):
+    def download_episode(self, media_directory, episode):
         for extension in ["v", "a"]:
             filename = "{}{}-E{}.{}".format(media_directory, self.name, episode, extension)
-            if os.path.exists("{}.part".format(filename)): 
+            if os.path.exists("{}.part".format(filename)):
                 logging.debug("%s is partially downloaded. Removing", filename)
                 try:
                     os.remove("{}.part".format(filename))
                 except OSError as err:
                     logging.error("Could not remove %s.part: %s", filename, err)
-            if not os.path.exists(filename): 
+            if not os.path.exists(filename):
                 logging.info("Downloading %s", filename)
                 ytdl_options_video = {"quiet": True,
                                       "outtmpl": filename}
@@ -116,10 +116,10 @@ class Stream:
                         download_position += 1
                     download_media = self.media_dictionary[self.order[download_position-1]]
                 download_episode = download_media.beginning
-            download = Process(target=download_media.download_episode, args=(media_directory, download_episode, webhook_url,))
+            download = Process(target=download_media.download_episode, args=(media_directory, download_episode,))
             download.start()
             download.join()
-    
+
     def stream_video(self, media_directory, overlay, ffmpeg_opts):
         overlay_input = ffmpeg.input(overlay)
         video = ffmpeg.input("{}{}-E{}.v".format(media_directory, self.media.name, self.episode), re=None).video.filter("scale", 1760, 990).filter("pad", 1920, 1080, 0, 90) .overlay(overlay_input)
@@ -169,9 +169,9 @@ def stream_standby(standby_directory, ffmpeg_opts):
 
 
 def media_files_exist(media_directory, media, episode):
-        if not os.path.exists("{}{}-E{}.v".format(media_directory, media, episode)) or not os.path.exists("{}{}-E{}.a".format(media_directory, media, episode)):
-            return False
-        return True
+    if not os.path.exists("{}{}-E{}.v".format(media_directory, media, episode)) or not os.path.exists("{}{}-E{}.a".format(media_directory, media, episode)):
+        return False
+    return True
 
 def kill_process(parent_pid):
     logging.info("Stopping standby video")
@@ -183,7 +183,7 @@ def kill_process(parent_pid):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("-c", "--config", help="Main configuration file location", default="/opt/Zanarkand/config.yml")
+    parser.add_argument("-c", "--config", help="Main configuration file location", default="/opt/zanarkand/config.yml")
     parser.add_argument("-d", "--debug", help="Enabled debug mode", action="store_true")
     args = parser.parse_args()
 
@@ -191,13 +191,15 @@ def main():
         try:
             config = safe_load(input_config)
         except YAMLError as yerr:
-            logging.error("Couldn't read the yaml config file: %s", yerr)
+            print("Couldn't read yaml config file {}: {}".format(args.config, yerr))
+            logging.error("Couldn't read yaml config file %s: %s", args.config, yerr)
             sys.exit(1)
 
     #Check mandatory options:
     for mandatory in ["youtube_key", "mediadirectory", "defaultdirectory", "logdirectory", "order", "sections", "discordwebhook"]:
         if mandatory not in config:
-            print("Mandatory option %s is not in the config file %s", mandatory, args.config)
+            print("Mandatory option {} is not in the config file {}".format(mandatory, args.config))
+            logging.error("Mandatory option %s is not in the config file %s", mandatory, args.config)
             sys.exit(1)
 
     # Check folders
@@ -205,11 +207,12 @@ def main():
         if check_dir in config:
             config[check_dir] = config[check_dir] + "/" if not config[check_dir].endswith('/') else config[check_dir]
             if not os.path.exists(config[check_dir]):
-                print("Directory %s specified in the configuration does not exist")
+                print("Directory {} specified in the configuration does not exist".format(check_dir))
+                logging.error("Directory %s specified in the configuration does not exist", check_dir)
                 sys.exit(1)
-    default_directory = config.get("defaultdirectory", "/opt/Zanarkand/defaults/")
-    log_directory = config.get("logdirectory", "/opt/Zanarkand/logs/")
-    media_directory = config.get("mediadirectory", "/opt/Zanarkand/media/")
+    default_directory = config.get("defaultdirectory", "/opt/zanarkand/defaults/")
+    log_directory = config.get("logdirectory", "/opt/zanarkand/logs/")
+    media_directory = config.get("mediadirectory", "/opt/zanarkand/media/")
 
     # Set up logging
     log_level = logging.INFO
@@ -233,7 +236,7 @@ def main():
         media = Media(config["sections"][media_section], media_section)
         media_dictionary[media_section] = media
 
-    status_yaml = config.get("current_status", "/opt/Zanarkand/current_status.yaml")
+    status_yaml = config.get("current_status", "/opt/zanarkand/current_status.yaml")
     with open(status_yaml, 'r') as input_status:
         try:
             status = safe_load(input_status)
@@ -249,8 +252,10 @@ def main():
         if not media_files_exist(media_directory, stream.media.name, stream.episode) or yt_needs_updating():
             logging.warning("Could not find media files for %s-E%s. Switching to standby", stream.media.name, stream.episode)
             if not yt_needs_updating():
-                download_episode = Process(target=stream.media.download_episode, args=(media_directory, stream.episode, webhook,))
+                download_episode = Process(target=stream.media.download_episode, args=(media_directory, stream.episode,))
                 download_episode.start()
+            else:
+                DiscordWebhook(url=webhook, content='@everyone Youtube-dl needs updating! Please run sudo `youtube-dl -U` and `sudo pip install youtube-dl -U` ASAP!').execute()
             while not media_files_exist(media_directory, stream.media.name, stream.episode):
                 if not default_stream.is_alive():
                     default_stream.start()
@@ -267,8 +272,8 @@ def main():
                           'loop': stream.loop}
         with open(status_yaml, 'w') as write_status:
             safe_dump(current_status,
-                 write_status,
-                 default_flow_style=False)
+                      write_status,
+                      default_flow_style=False)
 
         # Delete previous episodes
         if previous_media:

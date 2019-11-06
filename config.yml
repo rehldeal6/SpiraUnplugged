@@ -28,12 +28,14 @@ ffmpeg:
 order:
  - FF7
  - FFX
+ - Info
  - FF8
  - FFX
  - FF9
  - FFX
  - FFX-2
  - FF12
+ - Info
  - FFX
  - FF13
  - FF13-2
@@ -41,22 +43,17 @@ order:
  - FFX-2
  - FF15
 
-### Template ###
-# [Game Abbreviation] - This is what's referenced in the [Order] section
-# PlaylistID: Playlist ID given by YT (seen in the URL)
-# NumberOfLoops: Number of times to play the series consecutively
-# BeginningEpisode: The first video in the playlist to play
-#   OPTIONAL - Defaulted to 1
-# EndingEpisode: The last video in the playlist to play
-#   OPTIONAL - Defaulted to the last video
-# ExcludeEpisodes: Comma separated list of episode numbers to exclude in the middle of the playlist
-#   OPTIONAL - Defaults to none
-# VideoFormatID: The YT video format ID to download
-#   OPTIONAL - Defaulted to 'bestvideo'
-# AudioFormatID: The YT audio format ID to download
-#   OPTIONAL - Defaulted - 'bestaudio'
-
 sections:
+  #Template:
+  #<Name of Game/Video> (Needs to match entry in 'order' section)       REQUIRED
+  #  type:          playlist or video                                   REQUIRED
+  #  id:            URL id of playlist or video                         REQUIRED
+  #  loops:         Number of consective plays                          DEFAULT: 1
+  #  beginning:     Episode number to start in the playlist             DEFAULT: 1
+  #  exclude:       List of episode numbers to exclude from playing     DEFAULT: NONE
+  #  end:           Last episode to play in the playlist                DEFAULT: LAST VIDEO
+  #  videoformatid: YT video format ID to download                      DEFAULT: BESTVIDEO
+  #  audioformatid: YT audio format ID to download                      DEFAULT: BESTAUDIO
   FF7:
     type: playlist
     id: PL9wpzJw8GKy6jduVjw_TFkQleVQVQmjZ1
@@ -112,3 +109,6 @@ sections:
     type: playlist
     id: PL9wpzJw8GKy7Uh35q-_CDXJv_4jf4G8du
     videoformatid: 137
+  Info:
+    type: video
+    id: pUVs2fly-is
