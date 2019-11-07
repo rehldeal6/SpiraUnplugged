@@ -26,22 +26,22 @@ ffmpeg:
   format: flv
 
 order:
- - FF7
+ - FFVII
  - FFX
  - Info
- - FF8
+ - FFVIII
  - FFX
- - FF9
+ - FFIX
  - FFX
  - FFX-2
- - FF12
+ - FFXII
  - Info
  - FFX
- - FF13
- - FF13-2
+ - FFXIII
+ - FFXIII-2
  - FFX
  - FFX-2
- - FF15
+ - FFXV
 
 sections:
   #Template:
@@ -54,16 +54,16 @@ sections:
   #  end:           Last episode to play in the playlist                DEFAULT: LAST VIDEO
   #  videoformatid: YT video format ID to download                      DEFAULT: BESTVIDEO
   #  audioformatid: YT audio format ID to download                      DEFAULT: BESTAUDIO
-  FF7:
+  FFVII:
     type: playlist
     id: PL9wpzJw8GKy6jduVjw_TFkQleVQVQmjZ1
     loops: 2
     beginning: 2
-  FF8:
+  FFVIII:
     type: playlist
     id: PL9wpzJw8GKy7-VIz9_kYjaXYyqEerexxo
     loops: 2
-  FF9:
+  FFIX:
     type: playlist
     id: PL9wpzJw8GKy7_vGHBnsIf99WoE1PV8fib
     loops: 2
@@ -90,22 +90,22 @@ sections:
       - 95
       - 96
       - 97
-  FF12:
+  FFXII:
     type: playlist
     id: PL9wpzJw8GKy4PLI_hOOTLIRbZgc380SoJ
     ending: 132
     videoformatid: 137
-  FF13:
+  FFXIII:
     type: playlist
     id: PL9wpzJw8GKy5MRpDdYVvssMRgGjVLlA0K
     loops: 2
     videoformatid: 137
-  FF13-2:
+  FFXIII-2:
     type: playlist
     id: PL9wpzJw8GKy4XCYWG7RyNv62Y24vgxVcR
     loops: 2
     videoformatid: 137
-  FF15:
+  FFXV:
     type: playlist
     id: PL9wpzJw8GKy7Uh35q-_CDXJv_4jf4G8du
     videoformatid: 137

@@ -44,7 +44,7 @@ class Media(object):
         for extension in ["v", "a"]:
             filename = "{}{}-E{}.{}".format(media_directory, self.name, episode, extension)
             if os.path.exists("{}.part".format(filename)):
-                logging.debug("%s is partially downloaded. Removing", filename)
+                logging.warning("%s is partially downloaded. Removing", filename)
                 try:
                     os.remove("{}.part".format(filename))
                 except OSError as err:
@@ -95,7 +95,7 @@ class Stream:
             self.episode = self.media.beginning
         return
 
-    def download_next_n_episodes(self, number, media_directory, webhook_url):
+    def download_next_n_episodes(self, number, media_directory):
         download_episode = self.episode
         download_media = self.media
         download_loop = self.loop
@@ -121,8 +121,22 @@ class Stream:
             download.join()
 
     def stream_video(self, media_directory, overlay, ffmpeg_opts):
-        overlay_input = ffmpeg.input(overlay)
-        video = ffmpeg.input("{}{}-E{}.v".format(media_directory, self.media.name, self.episode), re=None).video.filter("scale", 1760, 990).filter("pad", 1920, 1080, 0, 90) .overlay(overlay_input)
+        #current_text = "Current: {} (E{}/{})".format(self.media.name, self.episode, self.media.ending)
+        current_text = "Current: FFXIII-3 (E103/103)"
+        overlay_input = ffmpeg.input(overlay)\
+                              .drawtext(text=current_text,
+                                        x=0,
+                                        y=52,
+                                        escape_text=False,
+                                        fontsize=35,
+                                        fontcolor="yellow",
+                                        font="agency-fb-bold",
+                                        fontfile="/opt/zanarkand/fonts/agency-fb-bold.ttf")
+        video = ffmpeg.input("{}{}-E{}.v".format(media_directory, self.media.name, self.episode), re=None)\
+                      .video\
+                      .filter("scale", 1760, 990)\
+                      .filter("pad", 1920, 1080, 0, 90)\
+                      .overlay(overlay_input)
         audio = ffmpeg.input("{}{}-E{}.a".format(media_directory, self.media.name, self.episode), re=None)
         try:
             logging.info("Starting episode %s-E%s", self.media.name, self.episode)
@@ -262,7 +276,7 @@ def main():
             download_episode.join()
         if default_stream.is_alive():
             kill_process(default_stream.pid)
-        streaming = Process(target=stream.stream_video, args=(media_directory, config.get("overlay"), config["ffmpeg"],))
+        streaming = Process(target=stream.stream_video, args=(media_directory, config.get("overlay"), config["ffmpeg"]))
         streaming.start()
 
         # Update status
@@ -284,7 +298,7 @@ def main():
                 logging.error("Could not remove the media files for %s-E%s: %s", stream.media.name, stream.episode, err)
 
         # Download next N episodes
-        Process(target=stream.download_next_n_episodes, args=(number_of_downloads, media_directory, webhook,)).start()
+        Process(target=stream.download_next_n_episodes, args=(number_of_downloads, media_directory,)).start()
         # Set up for next episode
         previous_media = "{}{}-E{}".format(media_directory, stream.media.name, stream.episode)
         stream.next()
