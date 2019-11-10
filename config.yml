@@ -1,6 +1,8 @@
 youtube_key: 32vs-4k2f-wrjz-epcs
 current_status: /home/rehlj/SpiraUnplugged/current_status.yml
 numberofdownloads: 3
+downloadattempts: 3
+faileddownloadwait: 120
 overlay: /home/rehlj/SpiraUnplugged/resources/1080overlay.png
 defaultdirectory: /home/rehlj/SpiraUnplugged/defaults/
 mediadirectory: /home/rehlj/SpiraUnplugged/media/
@@ -24,36 +26,47 @@ ffmpeg:
   viewportx: 0
   viewporty: 90
   format: flv
+  text:
+    font: agency-fb-bold
+    fontfile: /opt/zanarkand/fonts/agency-fb-bold.ttf
+    fontsize: 35
+    fontcolor: yellow
+    x: 5
+    y: 52
 
 order:
  - FFVII
  - FFX
- - Info
  - FFVIII
  - FFX
  - FFIX
  - FFX
- - FFX-2
+ - FFX2
+ - Intermission
  - FFXII
- - Info
  - FFX
  - FFXIII
- - FFXIII-2
+ - FFXIII2
  - FFX
- - FFX-2
+ - FFX2
  - FFXV
 
+### Template ###
+# [Game Abbreviation] - This is what's referenced in the [Order] section
+# PlaylistID: Playlist ID given by YT (seen in the URL)
+# NumberOfLoops: Number of times to play the series consecutively
+# BeginningEpisode: The first video in the playlist to play
+#   OPTIONAL - Defaulted to 1
+# EndingEpisode: The last video in the playlist to play
+#   OPTIONAL - Defaulted to the last video
+# ExcludeEpisodes: Comma separated list of episode numbers to exclude in the middle of the playlist
+#   OPTIONAL - Defaults to none
+# VideoFormatID: The YT video format ID to download
+#   OPTIONAL - Defaulted to 'bestvideo'
+# AudioFormatID: The YT audio format ID to download
+#   OPTIONAL - Defaulted - 'bestaudio'
+
 sections:
-  #Template:
-  #<Name of Game/Video> (Needs to match entry in 'order' section)       REQUIRED
-  #  type:          playlist or video                                   REQUIRED
-  #  id:            URL id of playlist or video                         REQUIRED
-  #  loops:         Number of consective plays                          DEFAULT: 1
-  #  beginning:     Episode number to start in the playlist             DEFAULT: 1
-  #  exclude:       List of episode numbers to exclude from playing     DEFAULT: NONE
-  #  end:           Last episode to play in the playlist                DEFAULT: LAST VIDEO
-  #  videoformatid: YT video format ID to download                      DEFAULT: BESTVIDEO
-  #  audioformatid: YT audio format ID to download                      DEFAULT: BESTAUDIO
   FFVII:
     type: playlist
     id: PL9wpzJw8GKy6jduVjw_TFkQleVQVQmjZ1
@@ -71,7 +84,7 @@ sections:
     type: playlist
     id: PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps
     ending: 133
-  FFX-2:
+  FFX2:
     type: playlist
     id: PL9wpzJw8GKy4iBmZcKF0HYd8xF0FmBueF
     exclude:
@@ -100,7 +113,7 @@ sections:
     id: PL9wpzJw8GKy5MRpDdYVvssMRgGjVLlA0K
     loops: 2
     videoformatid: 137
-  FFXIII-2:
+  FFXIII2:
     type: playlist
     id: PL9wpzJw8GKy4XCYWG7RyNv62Y24vgxVcR
     loops: 2
@@ -109,6 +122,6 @@ sections:
     type: playlist
     id: PL9wpzJw8GKy7Uh35q-_CDXJv_4jf4G8du
     videoformatid: 137
-  Info:
+  Intermission:
     type: video
     id: pUVs2fly-is

@@ -6,8 +6,10 @@ from __future__ import unicode_literals
 
 import os
 import sys
-import random
 import logging
+from time import sleep
+from random import choice
+from subprocess import check_call
 from argparse import ArgumentParser
 from multiprocessing import Process
 
@@ -40,7 +42,11 @@ class Media(object):
             self.ending = 1
         return
 
-    def download_episode(self, media_directory, episode):
+    def download_episode(self, media_directory, episode, webhook):
+        if yt_needs_updating():
+            DiscordWebhook(url=webhook, content='@everyone Youtube-dl needs updating! Attempting to upgrade it myself...').execute()
+            check_call(['youtube-dl', '-U'])
+            check_call(["python", '-m', 'pip', 'install',"--upgrade", 'youtube_dl'])
         for extension in ["v", "a"]:
             filename = "{}{}-E{}.{}".format(media_directory, self.name, episode, extension)
             if os.path.exists("{}.part".format(filename)):
@@ -62,8 +68,11 @@ class Media(object):
                     ytdl_options_video["format"] = str(self.videoid)
                 elif extension == "a":
                     ytdl_options_video["format"] = str(self.audioid)
-                ytdl_v = youtube_dl.YoutubeDL(ytdl_options_video)
-                ytdl_v.download([download_url])
+                ytdl = youtube_dl.YoutubeDL(ytdl_options_video)
+                ytdl.download([download_url])
+        if not media_files_exist(media_directory, self.name, episode):
+            pass
+            #DiscordWebhook(url=webhook, content='@everyone Failed download episode {}-E{}!'.format(self.name, episode)).execute()
         return
 
 class Stream:
@@ -95,7 +104,7 @@ class Stream:
             self.episode = self.media.beginning
         return
 
-    def download_next_n_episodes(self, number, media_directory):
+    def download_next_n_episodes(self, number, media_directory, webhook):
         download_episode = self.episode
         download_media = self.media
         download_loop = self.loop
@@ -116,22 +125,24 @@ class Stream:
                         download_position += 1
                     download_media = self.media_dictionary[self.order[download_position-1]]
                 download_episode = download_media.beginning
-            download = Process(target=download_media.download_episode, args=(media_directory, download_episode,))
+            download = Process(target=download_media.download_episode, args=(media_directory, download_episode, webhook,))
             download.start()
             download.join()
 
     def stream_video(self, media_directory, overlay, ffmpeg_opts):
-        #current_text = "Current: {} (E{}/{})".format(self.media.name, self.episode, self.media.ending)
-        current_text = "Current: FFXIII-3 (E103/103)"
+        if self.media.type == "playlist":
+            current_text = "Now: {} (E{}/{})".format(self.media.name, self.episode, self.media.ending)
+        else:
+            current_text = "Now: Intermission"
         overlay_input = ffmpeg.input(overlay)\
                               .drawtext(text=current_text,
-                                        x=0,
-                                        y=52,
+                                        x=ffmpeg_opts['text']['x'],
+                                        y=ffmpeg_opts['text']['y'],
                                         escape_text=False,
-                                        fontsize=35,
-                                        fontcolor="yellow",
-                                        font="agency-fb-bold",
-                                        fontfile="/opt/zanarkand/fonts/agency-fb-bold.ttf")
+                                        fontsize=ffmpeg_opts['text']['fontsize'],
+                                        fontcolor=ffmpeg_opts['text']['fontcolor'],
+                                        font=ffmpeg_opts['text']['font'],
+                                        fontfile=ffmpeg_opts['text']['fontfile'])
         video = ffmpeg.input("{}{}-E{}.v".format(media_directory, self.media.name, self.episode), re=None)\
                       .video\
                       .filter("scale", 1760, 990)\
@@ -160,22 +171,35 @@ class Stream:
         return
 
 def stream_standby(standby_directory, ffmpeg_opts):
-    video = random.choice(os.listdir(standby_directory))
     while True:
         try:
-            logging.info("Starting standby video %s", video)
-            ffmpeg.input(standby_directory + video, re=None).output(ffmpeg_opts['filename'],
-                                                                    format=ffmpeg_opts['format'],
-                                                                    vcodec=ffmpeg_opts['videocodec'],
-                                                                    acodec=ffmpeg_opts['audiocodec'],
-                                                                    minrate=ffmpeg_opts['minbitrate'],
-                                                                    maxrate=ffmpeg_opts['maxbitrate'],
-                                                                    bufsize=ffmpeg_opts['bufsize'],
-                                                                    crf=ffmpeg_opts['crf'],
-                                                                    preset=ffmpeg_opts['preset'],
-                                                                    audio_bitrate=ffmpeg_opts['audiobitrate'],
-                                                                    ar=ffmpeg_opts['audiofrequeny'],
-                                                                    g=ffmpeg_opts['groupofpictures']).run(quiet=True)
+            media = choice(os.listdir(standby_directory))
+            logging.info("Starting standby video %s", media)
+            video = ffmpeg.input(standby_directory + media, re=None).video\
+                          .drawtext(text="The stream is currently on standby, please bear with us while the Al-Bhed Tech Support fixes the issue.",
+                                    x="(w-text_w)/2",
+                                    y="h-50",
+                                    fontcolor="white",
+                                    fontsize=24,
+                                    box=1,
+                                    boxcolor="black",
+                                    boxborderw=5)
+            audio = ffmpeg.input(standby_directory + media, re=None).audio
+            ffmpeg.output(video,
+                          audio,
+                          ffmpeg_opts['filename'],
+                          format=ffmpeg_opts['format'],
+                          vcodec=ffmpeg_opts['videocodec'],
+                          acodec=ffmpeg_opts['audiocodec'],
+                          minrate=ffmpeg_opts['minbitrate'],
+                          maxrate=ffmpeg_opts['maxbitrate'],
+                          bufsize=ffmpeg_opts['bufsize'],
+                          crf=ffmpeg_opts['crf'],
+                          preset=ffmpeg_opts['preset'],
+                          audio_bitrate=ffmpeg_opts['audiobitrate'],
+                          ar=ffmpeg_opts['audiofrequeny'],
+                          g=ffmpeg_opts['groupofpictures'])\
+                  .run(quiet=True)
         except ffmpeg.Error as err:
             logging.error("Error while streaming %s: %s", video, err)
     return
@@ -261,19 +285,21 @@ def main():
     stream = Stream(config.get("order"), media_dictionary, status.get("position", 1), status.get("episode", 1), status.get("loop", 1))
     default_stream = Process(target=stream_standby, args=(default_directory, config["ffmpeg"],))
     previous_media = None
+    download_next = None
 
     while True:
-        if not media_files_exist(media_directory, stream.media.name, stream.episode) or yt_needs_updating():
-            logging.warning("Could not find media files for %s-E%s. Switching to standby", stream.media.name, stream.episode)
-            if not yt_needs_updating():
-                download_episode = Process(target=stream.media.download_episode, args=(media_directory, stream.episode,))
+        download_attempts = 0
+        while not media_files_exist(media_directory, stream.media.name, stream.episode):
+            if not default_stream.is_alive():
+                default_stream.start()
+                logging.warning("Could not find media files for %s-E%s. Switching to standby", stream.media.name, stream.episode)
+            while download_attempts < config.get("downloadattemps", 3) and not media_files_exist(media_directory, stream.media.name, stream.episode):
+                if download_attempts >= 1:
+                    sleep(config.get("faileddownloadwait", 120))
+                download_episode = Process(target=stream.media.download_episode, args=(media_directory, stream.episode, webhook))
                 download_episode.start()
-            else:
-                DiscordWebhook(url=webhook, content='@everyone Youtube-dl needs updating! Please run sudo `youtube-dl -U` and `sudo pip install youtube-dl -U` ASAP!').execute()
-            while not media_files_exist(media_directory, stream.media.name, stream.episode):
-                if not default_stream.is_alive():
-                    default_stream.start()
-            download_episode.join()
+                download_episode.join()
+                download_attempts += 1
         if default_stream.is_alive():
             kill_process(default_stream.pid)
         streaming = Process(target=stream.stream_video, args=(media_directory, config.get("overlay"), config["ffmpeg"]))
@@ -298,7 +324,11 @@ def main():
                 logging.error("Could not remove the media files for %s-E%s: %s", stream.media.name, stream.episode, err)
 
         # Download next N episodes
-        Process(target=stream.download_next_n_episodes, args=(number_of_downloads, media_directory,)).start()
+        if download_next:
+            if download_next.is_alive():
+                kill_process(download_next.pid)
+        download_next = Process(target=stream.download_next_n_episodes, args=(number_of_downloads, media_directory, webhook))
+        download_next.start()
         # Set up for next episode
         previous_media = "{}{}-E{}".format(media_directory, stream.media.name, stream.episode)
         stream.next()
