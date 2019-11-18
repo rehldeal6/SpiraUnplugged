@@ -1,10 +1,11 @@
 youtube_key: 32vs-4k2f-wrjz-epcs
 current_status: /home/rehlj/SpiraUnplugged/current_status.yml
+initialstandbyvideo: /home/rehlj/SpiraUnplugged/resources/standby.flv
 numberofdownloads: 3
-downloadattempts: 3
-faileddownloadwait: 120
+downloadattempts: 5
+faileddownloadwait: 60
 overlay: /home/rehlj/SpiraUnplugged/resources/1080overlay.png
-defaultdirectory: /home/rehlj/SpiraUnplugged/defaults/
+standbydirectory: /home/rehlj/SpiraUnplugged/standby/
 mediadirectory: /home/rehlj/SpiraUnplugged/media/
 logdirectory: /home/rehlj/SpiraUnplugged/logs/
 discordwebhook: https://discordapp.com/api/webhooks/639261337503137799/njlDSkXJ9HVNp88fYq5an0mcy9i1K50kn-a3iKd1ye1lpis9XOF6AmnLS_pBsPyfsBFR
@@ -50,6 +51,7 @@ order:
  - FFX
  - FFX2
  - FFXV
+ - Birthday
 
   #Template:
   #<Name of Game/Video> (Needs to match entry in 'order' section)       REQUIRED
@@ -121,3 +123,6 @@ sections:
   Intermission:
     type: video
     id: pUVs2fly-is
+  Birthday:
+    type: video
+    id: I81JBsKzhbU

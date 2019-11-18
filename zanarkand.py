@@ -46,7 +46,7 @@ class Media(object):
         if yt_needs_updating():
             DiscordWebhook(url=webhook, content='@everyone Youtube-dl needs updating! Attempting to upgrade it myself...').execute()
             check_call(['youtube-dl', '-U'])
-            check_call(["python", '-m', 'pip', 'install',"--upgrade", 'youtube_dl'])
+            check_call(['python', '-m', 'pip', 'install', '--upgrade', 'youtube_dl'])
         for extension in ["v", "a"]:
             filename = "{}{}-E{}.{}".format(media_directory, self.name, episode, extension)
             if os.path.exists("{}.part".format(filename)):
@@ -170,17 +170,30 @@ class Stream:
             logging.error("Error while streaming %s-E%s: %s", self.media.name, self.episode, err)
         return
 
-def stream_standby(standby_directory, ffmpeg_opts):
+def stream_longer_standby(standby_directory, ffmpeg_opts):
     while True:
         try:
             media = choice(os.listdir(standby_directory))
-            logging.info("Starting standby video %s", media)
+            logging.info("Starting longer standby video %s", media)
+            video_name = os.path.splitext(media)[0]
             video = ffmpeg.input(standby_directory + media, re=None).video\
                           .drawtext(text="The stream is currently on standby, please bear with us while the Al-Bhed Tech Support fixes the issue.",
                                     x="(w-text_w)/2",
+                                    y="h-100",
+                                    fontcolor="yellow",
+                                    fontsize=40,
+                                    font=ffmpeg_opts['text']['font'],
+                                    fontfile=ffmpeg_opts['text']['fontfile'],
+                                    box=1,
+                                    boxcolor="black",
+                                    boxborderw=5)\
+                          .drawtext(text="Now Playing: {}".format(video_name),
+                                    x="(w-text_w)/2",
                                     y="h-50",
-                                    fontcolor="white",
-                                    fontsize=24,
+                                    fontcolor="yellow",
+                                    fontsize=40,
+                                    font=ffmpeg_opts['text']['font'],
+                                    fontfile=ffmpeg_opts['text']['fontfile'],
                                     box=1,
                                     boxcolor="black",
                                     boxborderw=5)
@@ -204,7 +217,15 @@ def stream_standby(standby_directory, ffmpeg_opts):
             logging.error("Error while streaming %s: %s", video, err)
     return
 
-
+def stream_initial_standby(standby_video, output):
+    try:
+        logging.info("Starting initial standby video %s", standby_video)
+        ffmpeg.input(standby_video, re=None)\
+              .output(output, format="flv")\
+              .run(quiet=True)
+    except ffmpeg.Error as err:
+        logging.error("Error while streaming %s: %s", standby_video, err)
+    return
 
 def media_files_exist(media_directory, media, episode):
     if not os.path.exists("{}{}-E{}.v".format(media_directory, media, episode)) or not os.path.exists("{}{}-E{}.a".format(media_directory, media, episode)):
@@ -234,23 +255,24 @@ def main():
             sys.exit(1)
 
     #Check mandatory options:
-    for mandatory in ["youtube_key", "mediadirectory", "defaultdirectory", "logdirectory", "order", "sections", "discordwebhook"]:
+    for mandatory in ["youtube_key", "mediadirectory", "standbydirectory", "logdirectory", "order", "sections", "discordwebhook"]:
         if mandatory not in config:
             print("Mandatory option {} is not in the config file {}".format(mandatory, args.config))
             logging.error("Mandatory option %s is not in the config file %s", mandatory, args.config)
             sys.exit(1)
 
     # Check folders
-    for check_dir in ["defaultdirectory", "logdirectory", "mediadirectory"]:
+    for check_dir in ["standbydirectory", "logdirectory", "mediadirectory"]:
         if check_dir in config:
             config[check_dir] = config[check_dir] + "/" if not config[check_dir].endswith('/') else config[check_dir]
             if not os.path.exists(config[check_dir]):
                 print("Directory {} specified in the configuration does not exist".format(check_dir))
                 logging.error("Directory %s specified in the configuration does not exist", check_dir)
                 sys.exit(1)
-    default_directory = config.get("defaultdirectory", "/opt/zanarkand/defaults/")
+    standby_directory = config.get("standbydirectory", "/opt/zanarkand/standby/")
     log_directory = config.get("logdirectory", "/opt/zanarkand/logs/")
     media_directory = config.get("mediadirectory", "/opt/zanarkand/media/")
+    initial_standby_video = config.get("initialstandbyvideo", "/opt/zanarkand/resouces/standby.flv")
 
     # Set up logging
     log_level = logging.INFO
@@ -283,25 +305,33 @@ def main():
             sys.exit(1)
 
     stream = Stream(config.get("order"), media_dictionary, status.get("position", 1), status.get("episode", 1), status.get("loop", 1))
-    default_stream = Process(target=stream_standby, args=(default_directory, config["ffmpeg"],))
+    initial_standby = Process(target=stream_initial_standby, args=(initial_standby_video, config["ffmpeg"]["filename"],))
+    longer_standby = Process(target=stream_longer_standby, args=(standby_directory, config["ffmpeg"],))
+    initial_standby_played = False
     previous_media = None
     download_next = None
 
     while True:
         download_attempts = 0
         while not media_files_exist(media_directory, stream.media.name, stream.episode):
-            if not default_stream.is_alive():
-                default_stream.start()
+            if not initial_standby.is_alive() and not initial_standby_played:
+                initial_standby.start()
                 logging.warning("Could not find media files for %s-E%s. Switching to standby", stream.media.name, stream.episode)
-            while download_attempts < config.get("downloadattemps", 3) and not media_files_exist(media_directory, stream.media.name, stream.episode):
+            elif initial_standby.is_alive() and not initial_standby_played:
+                initial_standby.join()
+                initial_standby_played = True
+            elif initial_standby_played:
+                longer_standby.start()
+                longer_standby.join()
+            while download_attempts < config.get("downloadattemps", 5) and not media_files_exist(media_directory, stream.media.name, stream.episode):
                 if download_attempts >= 1:
-                    sleep(config.get("faileddownloadwait", 120))
+                    sleep(config.get("faileddownloadwait", 60))
                 download_episode = Process(target=stream.media.download_episode, args=(media_directory, stream.episode, webhook))
                 download_episode.start()
                 download_episode.join()
                 download_attempts += 1
-        if default_stream.is_alive():
-            kill_process(default_stream.pid)
+        if initial_standby.is_alive():
+            kill_process(initial_standby.pid)
         streaming = Process(target=stream.stream_video, args=(media_directory, config.get("overlay"), config["ffmpeg"]))
         streaming.start()
 
