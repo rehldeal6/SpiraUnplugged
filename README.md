@@ -63,6 +63,77 @@ tail -f /opt/zanarkand/logs/zanarkand.log
 
 If you are using a desktop environment for the stream, then there should be executables you can double click that will perform these same actions.;
 
+## Helpful commands
+### Using Youtube-DL
+The stream looks for videos in the `/opt/zanarkand/media/` folder. It looks for it in a specific format:
+```
+<game-name>-E<episode-number>.v
+<game-name>-E<episode-number>.a
+```
+And the `<game-name>` NEEDS to match the game title in `config.yml`. 
+
+If you need to download a specific video, here's what you can do:
+
+#### Downloading using a playlist
+```console
+youtube-dl --playlist-items <episode number> --format bestvideo --output /opt/zanarkand/media/<game-name>-E<episode-number>.v <playlist URL>"
+youtube-dl --playlist-items <episode number> --format bestaudio --output /opt/zanarkand/media/<game-name>-E<episode-number>.a <playlist URL>"
+```
+Example command to download Episode 10 of the FFX playlist in the format the stream needs:
+```console
+youtube-dl --playlist-items 10 --format bestvideo --output /opt/zanarkand/media/FFX-E10.v https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps"
+youtube-dl --playlist-items 10 --format bestaudio --output /opt/zanarkand/media/FFX-E10.a https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps"
+```
+
+#### Downloading a specific video
+```console
+youtube-dl --format bestvideo --output /opt/zanarkand/media/<game-name>-E<episode-number>.v <video URL>
+youtube-dl --format bestaudio --output /opt/zanarkand/media/<game-name>-E<episode-number>.a <video URL>
+```
+Example command to download Episode 10 of the FFX playlist in the format the stream needs:
+```console
+youtube-dl --format bestvideo --output /opt/zanarkand/media/FFX-E10.v https://www.youtube.com/watch?v=xoLBwYgcsbk
+youtube-dl --format bestaudio --output /opt/zanarkand/media/FFX-E10.a https://www.youtube.com/watch?v=xoLBwYgcsbk
+```
+
+#### View all of the formats available for a video
+Youtube uses its own specific video format IDs to use for the `--format` option. To view the formats available for a video, run the following command:
+```console
+youtube-dl -F <youtube URL>
+```
+Example:
+```console
+youtube-dl -F https://www.youtube.com/watch?v=xoLBwYgcsbk
+[youtube] xoLBwYgcsbk: Downloading webpage
+[youtube] xoLBwYgcsbk: Downloading video info webpage
+[info] Available formats for xoLBwYgcsbk:
+format code  extension  resolution note
+249          webm       audio only tiny   60k , opus @ 50k (48000Hz), 7.01MiB
+250          webm       audio only tiny   80k , opus @ 70k (48000Hz), 9.24MiB
+140          m4a        audio only tiny  129k , m4a_dash container, mp4a.40.2@128k (44100Hz), 18.66MiB
+251          webm       audio only tiny  157k , opus @160k (48000Hz), 18.69MiB
+278          webm       256x144    144p   98k , webm container, vp9, 30fps, video only, 11.50MiB
+160          mp4        256x144    144p  113k , avc1.4d400c, 30fps, video only, 6.31MiB
+242          webm       426x240    240p  230k , vp9, 30fps, video only, 19.23MiB
+133          mp4        426x240    240p  245k , avc1.4d4015, 30fps, video only, 11.93MiB
+243          webm       640x360    360p  416k , vp9, 30fps, video only, 35.82MiB
+134          mp4        640x360    360p  634k , avc1.4d401e, 30fps, video only, 30.47MiB
+244          webm       854x480    480p  771k , vp9, 30fps, video only, 61.96MiB
+135          mp4        854x480    480p 1200k , avc1.4d401f, 30fps, video only, 59.63MiB
+247          webm       1280x720   720p 1512k , vp9, 30fps, video only, 128.12MiB
+136          mp4        1280x720   720p 2373k , avc1.4d401f, 30fps, video only, 109.89MiB
+248          webm       1920x1080  1080p 2698k , vp9, 30fps, video only, 241.73MiB
+137          mp4        1920x1080  1080p 4317k , avc1.640028, 30fps, video only, 206.44MiB
+43           webm       640x360    360p , vp8.0, vorbis@128k, 102.34MiB
+18           mp4        640x360    360p  490k , avc1.42001E, mp4a.40.2@ 96k (44100Hz), 72.09MiB
+22           mp4        1280x720   720p  874k , avc1.64001F, mp4a.40.2@192k (44100Hz) (best)
+```
+So if we wanted to download a `1920x1080` mp4 video (format code `137`)  and the `m4a` audio (format code `140`), you would do the following (using FFX-E10 as an example):
+
+```console
+youtube-dl --format 137 --output /opt/zanarkand/media/FFX-E10.v https://www.youtube.com/watch?v=xoLBwYgcsbk
+youtube-dl --format 140 --output /opt/zanarkand/media/FFX-E10.a https://www.youtube.com/watch?v=xoLBwYgcsbk
+```
 
 ## Debugging the stream
 This part of the README is designed to grow as we come across problems related to this software. We should document any fixes to the stream here.
