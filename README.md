@@ -77,4 +77,4 @@ or
 sudo pip install youtube-dl --upgrade
 ```
 
-Afterwards, [restart the stream](### Restart the stream)
+Afterwards, [restart the stream](restart-the-stream)
