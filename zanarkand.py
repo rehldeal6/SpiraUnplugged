@@ -2,13 +2,12 @@
 from __future__ import unicode_literals
 #TODO: - Check to see if ffmpeg can start a video on a specific timestamp
 #      - Add in bot to send messages to YT stream chat
-#      - Add ability to auto-update
 
 import os
-import sys
 import logging
 from time import sleep
 from random import choice
+from sys import exit as sys_exit
 from subprocess import check_call
 from argparse import ArgumentParser
 from multiprocessing import Process
@@ -21,7 +20,18 @@ from psutil import Process as p_process
 from discord_webhook import DiscordWebhook
 
 class Media(object):
+    '''
+    Object for a specific media or game (playlist of single video).
+    Contains information such as youtube ID, number of loops, video/audio quality, etc.
+    '''
     def __init__(self, config, name):
+        '''
+        Create the media object
+
+        Inputs:
+        config      [dict] Media configuration
+        name        [str]  Name of media
+        '''
         self.name = name
         try:
             self.type = config["type"]
@@ -43,6 +53,16 @@ class Media(object):
         return
 
     def download_episode(self, media_directory, episode, webhook):
+        '''
+        Uses youtube-dl to download the specific episode. First downloads the video file, then audio file. Will also try to
+        self update if needed. Sends notifications to discord if anything fails or it attempts to update itself
+
+        Input:
+        media_directory     [str] Location where to save the files
+        episode             [int] Episode number to download
+        webhook             [str] Discord webhook for notifications
+        '''
+
         if yt_needs_updating():
             DiscordWebhook(url=webhook, content='@everyone Youtube-dl needs updating! Attempting to upgrade it myself...').execute()
             check_call(['youtube-dl', '-U'])
@@ -71,12 +91,26 @@ class Media(object):
                 ytdl = youtube_dl.YoutubeDL(ytdl_options_video)
                 ytdl.download([download_url])
         if not media_files_exist(media_directory, self.name, episode):
-            pass
-            #DiscordWebhook(url=webhook, content='@everyone Failed download episode {}-E{}!'.format(self.name, episode)).execute()
+            DiscordWebhook(url=webhook, content='@everyone Failed download episode {}-E{}!'.format(self.name, episode)).execute()
         return
 
-class Stream:
+class Stream(object):
+    '''
+    Overall stream object. It contains information about what's currently being played, the order of media to play,
+    current loop, etc.
+    '''
     def __init__(self, order, media_dictionary, position, episode, loop):
+        '''
+        Create the stream object
+
+        Inputs:
+        order               [list] Order of media to play
+        media_dictionary    [dict] Dictionary of Media objects
+        position            [int]  Current position in order
+        episode             [int]  First episode to play
+        loop                [int]  Loop order
+        '''
+
         self.media = media_dictionary[order[position - 1]]
         self.episode = episode
         self.position = position
@@ -87,6 +121,9 @@ class Stream:
 
 
     def next(self):
+        '''
+        Set the stream to play the next episode
+        '''
         if self.episode < self.media.ending:
             self.episode += 1
             while self.episode in self.media.exclude and self.episode < self.media.ending:
@@ -105,6 +142,14 @@ class Stream:
         return
 
     def download_next_n_episodes(self, number, media_directory, webhook):
+        '''
+        Get the next N episodes and download them preemptively
+
+        Inputs:
+        number          [int] Number of episodes ahead to download
+        media_directory [str] Directory to store the downloaded media
+        webhook         [str] Discord webhook for notifications
+        '''
         download_episode = self.episode
         download_media = self.media
         download_loop = self.loop
@@ -128,8 +173,17 @@ class Stream:
             download = Process(target=download_media.download_episode, args=(media_directory, download_episode, webhook,))
             download.start()
             download.join()
+        return
 
     def stream_video(self, media_directory, overlay, ffmpeg_opts):
+        '''
+        Use ffmpeg to stream the current stream episode
+
+        Inputs:
+        media_directory     [str]  Directory containing media files
+        overlay             [str]  Location of the overlay to put on top of the video
+        ffmpeg_opts         [dict] Dictionary of ffmpeg options used
+        '''
         if self.media.type == "playlist":
             current_text = "Now: {} (E{}/{})".format(self.media.name, self.episode, self.media.ending)
         else:
@@ -145,8 +199,14 @@ class Stream:
                                         fontfile=ffmpeg_opts['text']['fontfile'])
         video = ffmpeg.input("{}{}-E{}.v".format(media_directory, self.media.name, self.episode), re=None)\
                       .video\
-                      .filter("scale", 1760, 990)\
-                      .filter("pad", 1920, 1080, 0, 90)\
+                      .filter("scale",
+                              ffmpeg_opts['viewportwidth'],
+                              ffmpeg_opts['viewportheight'])\
+                      .filter("pad",
+                              ffmpeg_opts['resolutionwidth'],
+                              ffmpeg_opts['resolutionheight'],
+                              ffmpeg_opts['viewportx'],
+                              ffmpeg_opts['viewporty'])\
                       .overlay(overlay_input)
         audio = ffmpeg.input("{}{}-E{}.a".format(media_directory, self.media.name, self.episode), re=None)
         try:
@@ -171,6 +231,13 @@ class Stream:
         return
 
 def stream_longer_standby(standby_directory, ffmpeg_opts):
+    '''
+    Use ffmpeg to stream the current a random standby video
+
+    Inputs:
+    standby_directory   [str]  Directory containing pre-downloaded standby videos
+    ffmpeg_opts         [dict] Dictionary of ffmpeg options used
+    '''
     while True:
         try:
             media = choice(os.listdir(standby_directory))
@@ -218,6 +285,13 @@ def stream_longer_standby(standby_directory, ffmpeg_opts):
     return
 
 def stream_initial_standby(standby_video, output):
+    '''
+    Use ffmpeg to stream the current a random standby video
+
+    Inputs:
+    standby_video   [str] Initial default standby video
+    output          [str] youtube URL to output
+    '''
     try:
         logging.info("Starting initial standby video %s", standby_video)
         ffmpeg.input(standby_video, re=None)\
@@ -228,11 +302,25 @@ def stream_initial_standby(standby_video, output):
     return
 
 def media_files_exist(media_directory, media, episode):
+    '''
+    Check if both audio and video file exists for a particular episode of media
+
+    Inputs:
+    media_directory     [str] Directory to check for downloaded media
+    media               [str] Name of media
+    episode             [int] Episode to check
+    '''
     if not os.path.exists("{}{}-E{}.v".format(media_directory, media, episode)) or not os.path.exists("{}{}-E{}.a".format(media_directory, media, episode)):
         return False
     return True
 
 def kill_process(parent_pid):
+    '''
+    Kill a process and its parent children. Used for the intial standby stream.
+
+    Inputs:
+    parent_pid      [int] PID of the standby process
+    '''
     logging.info("Stopping standby video")
     parent = p_process(parent_pid)
     for child in parent.children(recursive=True):
@@ -241,6 +329,9 @@ def kill_process(parent_pid):
     return
 
 def main():
+    '''
+    main
+    '''
     parser = ArgumentParser()
     parser.add_argument("-c", "--config", help="Main configuration file location", default="/opt/zanarkand/config.yml")
     parser.add_argument("-d", "--debug", help="Enabled debug mode", action="store_true")
@@ -252,14 +343,14 @@ def main():
         except YAMLError as yerr:
             print("Couldn't read yaml config file {}: {}".format(args.config, yerr))
             logging.error("Couldn't read yaml config file %s: %s", args.config, yerr)
-            sys.exit(1)
+            sys_exit(1)
 
     #Check mandatory options:
     for mandatory in ["youtube_key", "mediadirectory", "standbydirectory", "logdirectory", "order", "sections", "discordwebhook"]:
         if mandatory not in config:
             print("Mandatory option {} is not in the config file {}".format(mandatory, args.config))
             logging.error("Mandatory option %s is not in the config file %s", mandatory, args.config)
-            sys.exit(1)
+            sys_exit(1)
 
     # Check folders
     for check_dir in ["standbydirectory", "logdirectory", "mediadirectory"]:
@@ -268,7 +359,7 @@ def main():
             if not os.path.exists(config[check_dir]):
                 print("Directory {} specified in the configuration does not exist".format(check_dir))
                 logging.error("Directory %s specified in the configuration does not exist", check_dir)
-                sys.exit(1)
+                sys_exit(1)
     standby_directory = config.get("standbydirectory", "/opt/zanarkand/standby/")
     log_directory = config.get("logdirectory", "/opt/zanarkand/logs/")
     media_directory = config.get("mediadirectory", "/opt/zanarkand/media/")
@@ -302,7 +393,7 @@ def main():
             status = safe_load(input_status)
         except YAMLError as yerr:
             logging.error("Couldn't read the yaml config file: %s", yerr)
-            sys.exit(1)
+            sys_exit(1)
 
     stream = Stream(config.get("order"), media_dictionary, status.get("position", 1), status.get("episode", 1), status.get("loop", 1))
     initial_standby = Process(target=stream_initial_standby, args=(initial_standby_video, config["ffmpeg"]["filename"],))
