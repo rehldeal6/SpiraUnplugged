@@ -21,7 +21,8 @@ ffmpeg:
   minbitrate: 5000K
   maxbitrate: 6000K
   bufsize: 12000K
-  resolution: 1080
+  resolutionheight: 1080
+  resolutionwidth: 1920
   viewportwidth: 1760
   viewportheight: 990
   viewportx: 0
@@ -32,7 +33,7 @@ ffmpeg:
     fontfile: /opt/zanarkand/fonts/agency-fb-bold.ttf
     fontsize: 35
     fontcolor: yellow
-    x: 0
+    x: 5
     y: 52
 
 order:
