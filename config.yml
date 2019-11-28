@@ -55,9 +55,9 @@ order:
  - Birthday
 
   #Template:
-  #<Name of Game/Video> (Needs to match entry in 'order' section)       REQUIRED
-  #  type:          playlist or video                                   REQUIRED
-  #  id:            URL id of playlist or video                         REQUIRED
+  #<Name of Game/Video> (NEEDS to match entry in 'order' section)       **REQUIRED**
+  #  type:          playlist or video                                   **REQUIRED**
+  #  id:            URL id of playlist or video                         **REQUIRED**
   #  loops:         Number of consective plays                          DEFAULT: 1
   #  beginning:     Episode number to start in the playlist             DEFAULT: 1
   #  exclude:       List of episode numbers to exclude from playing     DEFAULT: NONE
