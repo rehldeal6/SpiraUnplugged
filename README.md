@@ -4,14 +4,14 @@
 Welcome to the stream that never sleeps! This software is essentially a Remake/Remaster of Topher's beautiful program that has keep the stream alive for over a year. Due to Topher not being around anymore to help debug issues that we've seen with the stream, we decided to re-write the software for a few reasons.
 1. Topher's software on the server is compiled. This means that we are unable to make any changes or read the code to see what he's doing.
 2. Python is a little bit easier to read (if anyone cared to read it) and the code can be edited on the server. After restarting the software, the change takes place
-3. Berk had a few new ideas and upgraded for the stream. If we wanted to incorporate these changes, we pretty much had to re-write the software.
+3. Berk had a few new ideas and upgrades for the stream. If we wanted to incorporate these changes, we pretty much had to re-write the software.
 After Berk and I have debugged some of the issues that we had to deal with, we had a good general idea of what the software was doing. So this code _doesn't_ perform everything the same way Topher's program executed things, but the end result is the same along with some updates.
 
 ## Components
 There are three main pieces of software that this program uses that are essential for the stream:
 1. [ffmpeg](https://www.ffmpeg.org/) - "A complete, cross-platform solution to record, convert and stream audio and video."
 2. [youtube-dl](https://ytdl-org.github.io/youtube-dl/index.html) - "A command-line program to download videos from YouTube.com"
-3. This software :)
+3. zanarkand.py - The software I wrote that brings everything together.
 
 ## Folder Structure and File Information
 The main bulk of the code and files are stored on the server in the `/opt/zanarkand/` directory. From there, there are specific and important directories that need to exist:
