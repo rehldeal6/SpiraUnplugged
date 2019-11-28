@@ -3,7 +3,7 @@
 ## Overview
 Welcome to the stream that never sleeps! This software is essentially a Remake/Remaster of Topher's beautiful program that has keep the stream alive for over a year. Due to Topher not being around anymore to help debug issues that we've seen with the stream, we decided to re-write the software for a few reasons.
 1. Topher's software on the server is compiled. This means that we are unable to make any changes or read the code to see what he's doing.
-2. Python is a little bit easier to read (if anyone cared to read it) and the code can be edited on the server. After a restarting the software, the change takes place
+2. Python is a little bit easier to read (if anyone cared to read it) and the code can be edited on the server. After restarting the software, the change takes place
 3. Berk had a few new ideas and upgraded for the stream. If we wanted to incorporate these changes, we pretty much had to re-write the software.
 After Berk and I have debugged some of the issues that we had to deal with, we had a good general idea of what the software was doing. So this code _doesn't_ perform everything the same way Topher's program executed things, but the end result is the same along with some updates.
 
