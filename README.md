@@ -36,8 +36,8 @@ The main bulk of the code and files are stored on the server in the `/opt/zanark
 * `standby` - Directory containing the pre-downlowned videos used for standby
 
 There are a few other files that are used by the stream...
-`/lib/systemd/system/zanarkand.service` - A file that makes the stream software a system service, makes it easier to stop/start/restart the software.
-`/etc/logrotate.d/zanarkand` - A file that "rotates" the log file, so that it doesn't continuously grow forever and eat up disk space.
+* `/lib/systemd/system/zanarkand.service` - A file that makes the stream software a system service, makes it easier to stop/start/restart the software.
+* `/etc/logrotate.d/zanarkand` - A file that "rotates" the log file, so that it doesn't continuously grow forever and eat up disk space.
 
 ## Controlling the stream
 Due to that `zanarkand.service` file, it's now super easy to start, stop, and restart the stream on the command line. 
