@@ -5,7 +5,7 @@ Welcome to the stream that never sleeps! This software is essentially a Remake/R
 1. Topher's software on the server is compiled. This means that we are unable to make any changes or read the code to see what he's doing.
 2. Python is a little bit easier to read (if anyone cared to read it) and the code can be edited on the server. After a restarting the software, the change takes place
 3. Berk had a few new ideas and upgraded for the stream. If we wanted to incorporate these changes, we pretty much had to re-write the software.
-After Berk and I have debugged some of the issues that we had to deal with, we had a good general idea of what the software was doing. So this code doesn't do everything the same way Topher's program executed things, but the end result is the same, along with my additions.
+After Berk and I have debugged some of the issues that we had to deal with, we had a good general idea of what the software was doing. So this code _doesn't_ perform everything the same way Topher's program executed things, but the end result is the same along with some updates.
 
 ## Components
 There are three main pieces of software that this program uses that are essential for the stream:
@@ -61,7 +61,7 @@ sudo systemctl restart zanarkand
 tail -f /opt/zanarkand/logs/zanarkand.log
 ```
 
-If you are using a desktop environment for the stream, then there should be executables you can double click that will perform these same actions.;
+If you are using a desktop environment for the stream, then there should be executables you can double click that will perform these same actions.
 
 ## Helpful commands
 ### Using Youtube-DL
@@ -70,8 +70,11 @@ The stream looks for videos in the `/opt/zanarkand/media/` folder. It looks for 
 <game-name>-E<episode-number>.v
 <game-name>-E<episode-number>.a
 ```
-And the `<game-name>` NEEDS to match the game title in `config.yml`. 
-
+If it's a single video, it might look like this:
+```
+Intermission-E1.v
+Intermission-E1.a
+```
 If you need to download a specific video, here's what you can do:
 
 #### Downloading using a playlist
@@ -149,3 +152,8 @@ sudo pip install youtube-dl --upgrade
 ```
 
 Afterwards, [restart the stream](#restart-the-stream)
+
+## TODOs
+We can keep an official list of things we might want to add to the stream here
+* A youtube bot that can let chat know that there's an issue
+* Start a video at a specific timestamp
