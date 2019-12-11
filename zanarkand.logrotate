@@ -1,0 +1,11 @@
+/opt/zanarkand/logs/*.log {
+  rotate 31
+  daily
+  compress
+  missingok
+  notifempty
+  create 0644 rehlj rehlj
+  postrotate
+     /bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` 2> /dev/null || true
+  endscript
+}

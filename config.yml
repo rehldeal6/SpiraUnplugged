@@ -1,0 +1,129 @@
+youtube_key: 32vs-4k2f-wrjz-epcs
+current_status: /home/rehlj/SpiraUnplugged/current_status.yml
+initialstandbyvideo: /home/rehlj/SpiraUnplugged/resources/standby.flv
+numberofdownloads: 3
+downloadattempts: 5
+faileddownloadwait: 60
+overlay: /home/rehlj/SpiraUnplugged/resources/1080overlay.png
+standbydirectory: /home/rehlj/SpiraUnplugged/standby/
+mediadirectory: /home/rehlj/SpiraUnplugged/media/
+logdirectory: /home/rehlj/SpiraUnplugged/logs/
+discordwebhook: https://discordapp.com/api/webhooks/639261337503137799/njlDSkXJ9HVNp88fYq5an0mcy9i1K50kn-a3iKd1ye1lpis9XOF6AmnLS_pBsPyfsBFR
+
+ffmpeg:
+  preset: superfast
+  crf: 18
+  audiobitrate: 128k
+  audiofrequeny: 44100
+  audiocodec: libmp3lame
+  videocodec: libx264
+  groupofpictures: 30
+  minbitrate: 5000K
+  maxbitrate: 6000K
+  bufsize: 12000K
+  resolutionheight: 1080
+  resolutionwidth: 1920
+  viewportwidth: 1760
+  viewportheight: 990
+  viewportx: 0
+  viewporty: 90
+  format: flv
+  text:
+    font: agency-fb-bold
+    fontfile: /opt/zanarkand/fonts/agency-fb-bold.ttf
+    fontsize: 35
+    fontcolor: yellow
+    x: 5
+    y: 52
+
+order:
+ - FFVII
+ - FFX
+ - FFVIII
+ - FFX
+ - FFIX
+ - FFX
+ - FFX2
+ - Intermission
+ - FFXII
+ - FFX
+ - FFXIII
+ - FFXIII2
+ - FFX
+ - FFX2
+ - FFXV
+ - Birthday
+
+  #Template:
+  #<Name of Game/Video> (NEEDS to match entry in 'order' section)       **REQUIRED**
+  #  type:          playlist or video                                   **REQUIRED**
+  #  id:            URL id of playlist or video                         **REQUIRED**
+  #  loops:         Number of consective plays                          DEFAULT: 1
+  #  beginning:     Episode number to start in the playlist             DEFAULT: 1
+  #  exclude:       List of episode numbers to exclude from playing     DEFAULT: NONE
+  #  end:           Last episode to play in the playlist                DEFAULT: LAST VIDEO
+  #  videoformatid: YT video format ID to download                      DEFAULT: BESTVIDEO
+  #  audioformatid: YT audio format ID to download                      DEFAULT: BESTAUDIO
+
+sections:
+  FFVII:
+    type: playlist
+    id: PL9wpzJw8GKy6jduVjw_TFkQleVQVQmjZ1
+    loops: 2
+    beginning: 2
+  FFVIII:
+    type: playlist
+    id: PL9wpzJw8GKy7-VIz9_kYjaXYyqEerexxo
+    loops: 2
+  FFIX:
+    type: playlist
+    id: PL9wpzJw8GKy7_vGHBnsIf99WoE1PV8fib
+    loops: 2
+  FFX:
+    type: playlist
+    id: PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps
+    ending: 133
+  FFX-2:
+    type: playlist
+    id: PL9wpzJw8GKy4iBmZcKF0HYd8xF0FmBueF
+    exclude:
+      - 83
+      - 84
+      - 85
+      - 86
+      - 87
+      - 88
+      - 89
+      - 90
+      - 91
+      - 92
+      - 93
+      - 94
+      - 95
+      - 96
+      - 97
+  FFXII:
+    type: playlist
+    id: PL9wpzJw8GKy4PLI_hOOTLIRbZgc380SoJ
+    ending: 132
+    videoformatid: 137
+  FFXIII:
+    type: playlist
+    id: PL9wpzJw8GKy5MRpDdYVvssMRgGjVLlA0K
+    loops: 2
+    videoformatid: 137
+  FFXIII-2:
+    type: playlist
+    id: PL9wpzJw8GKy4XCYWG7RyNv62Y24vgxVcR
+    loops: 2
+    videoformatid: 137
+  FFXV:
+    type: playlist
+    id: PL9wpzJw8GKy7Uh35q-_CDXJv_4jf4G8du
+    videoformatid: 137
+  Intermission:
+    type: video
+    id: pUVs2fly-is
+  Birthday:
+    type: video
+    id: I81JBsKzhbU
