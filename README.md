@@ -75,7 +75,7 @@ position: 1
 The order of the options may be different. The two options worth noting are `game` and `position`. The `game` option **has to match the game listed under `sections` in `config.yml`**. The `position` option refers to the order position we are in the stream. **FFVII** is the first game listed under `order` in `config.yml`, so it's listed as `position: 1`. This helps if there are any duplicate entries in `order`, like **FFX**. So if we were to update this file to play FFX after FFIX, episode 20, loop 1, we would make the following update:
 ```
 game: FFX
-episode: 2
+episode: 20
 loop: 1
 position: 6
 ```
