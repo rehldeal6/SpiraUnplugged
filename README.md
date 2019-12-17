@@ -39,21 +39,64 @@ There are a few other files that are used by the stream...
 * `/lib/systemd/system/zanarkand.service` - A file that makes the stream software a system service, makes it easier to stop/start/restart the software.
 * `/etc/logrotate.d/zanarkand` - A file that "rotates" the log file, so that it doesn't continuously grow forever and eat up disk space.
 
+## Common Tasks
+
+### Changing the overlay
+The overlay file is configued in `config.yml` associated with the **overlay** keywork. So for example, in this repository, **overlay** is configured to be `/home/rehlj/SpiraUnplugged/resources/1080overlay.png`. In order to make an update to that file, one needs to copy the file off the server, make the update, and put the file back onto the server in the correct location. A common program that can be used to transfer the file on or off the server is [WinSCP](https://winscp.net/eng/index.php). Once you enter in the server IP address and proper credentials, you can navigate to the file and transfer it to/from desktop. Once the overlay file has been updated, it will be applied to the next video in the stream.
+
+### Changing the stream quality
+The stream quality is configured in `config.yml` under the `ffmpeg` section. The most commong setting to change is the `preset` option. The `crf`, `groupofpictures` and some of the bitrate options are also configurable to the quality of the stream. [This ffmpeg link](https://trac.ffmpeg.org/wiki/Encode/H.264) shows the different values that can be used.
+
+Another way to change the stream quality is to update the `videoformatid` and `audioformatid` options under `sections` in `config.yml`. Each video or playlist has an option to specify the video or audio quality. Check out [this section](#view-all-of-the-formats-available-for-a-video) on how to option the types of video and audio formats available for each video or playlist. Once you update the `config.yml` with the new `videoformatid` and/or `audioformatid` with the new values, you need to [restart the stream](#restart-the-stream).
+
+### Change the stream schedule
+The stream schedule is configured under the `order` section of `config.yml`. Update the value as needed, but make sure that each entry in `order` **matches up with an entry under `sections`**. If there is something in `order` that does NOT match up with an entry in `sections`, the stream will not be able to start properly.
+Once the update to the order has been made, [restart the stream](#restart-the-stream).
+
+### Changing the standby text
+I should really make the standby text configurable, but for now it's hardcoded into the stream software. To update the text, one needs to edit the stream software file (`zanarkand.py`) which is located in `/opt/zanarkand/zanarkand.py`. The text is hardcoded on line #247. After the update has been made, save the file. Then, [restart the stream](#restart-the-stream).
+
+### Checking if youtube-dl is up to date
+See [Youtube-dl needs updating](#youtube-dl-needs-updating).
+
+### Adding or changing videos that will play during standby
+The standby videos directory is specified in `config.yml` with the `standbydirectory` option. For example, in this repository, it's located at `/home/rehlj/SpiraUnplugged/standby/`. It contains pre-downloaded videos to play during an extended outage. The streaming software will randomly pick one of these videos in that directory to play during the downtime. To remove a video from being shown during standby, simply delete the video. To add a video to the directory, see [Downloading using a playlist](#downloading-using-a-playlist) or 
+[Downloading a specific video](#downloading-a-specific-video). 
+**NOTE**: The stream will display the name of the video being played, and it keys off of the video filename. Please make sure to remove any extranneous information from the filename. By default, it appends the video ID on the end of the video. For example, if you were to download the video `Final Fantasy X - Storyline Boss Guide - AI, Tips & Tricks`, it'll download it as `Final Fantasy X - Storyline Boss Guide - AI, Tips & Tricks-d1Qft-LVGgI.mp4`. Remove the `-d1Qft-LVGgI` at the end so it just looks like `Final Fantasy X - Storyline Boss Guide - AI, Tips & Tricks.mp4` in order for the name to be displayed properly on the stream.
+
+### Changing the currently streaming video to play another video
+In `config.yml` there is an option called `current_status` that points to the file that handles the currently streaming video. It's probably in `/opt/zanarkand/current_status.yml`. It should look something like this (this is the very first video of the stream):
+```
+game: FFVII
+episode: 2
+loop: 1
+position: 1
+```
+The order of the options may be different. The two options worth noting are `game` and `position`. The `game` option **has to match the game listed under `sections` in `config.yml`**. The `position` option refers to the order position we are in the stream. **FFVII** is the first game listed under `order` in `config.yml`, so it's listed as `position: 1`. This helps if there are any duplicate entries in `order`, like **FFX**. So if we were to update this file to play FFX after FFIX, episode 20, loop 1, we would make the following update:
+```
+game: FFX
+episode: 2
+loop: 1
+position: 6
+```
+since that specific instance of **FFX** is the **6th** entry under `order`. Once the update to the current status file has been made, [restart the stream](#restart-the-stream).
+
 ## Controlling the stream
 Due to that `zanarkand.service` file, it's now super easy to start, stop, and restart the stream on the command line. 
+
 ### Start the stream
 ```console
-sudo systemctl start zanarkand
+systemctl start zanarkand
 ```
 
 ### Stop the stream
 ```console
-sudo systemctl stop zanarkand
+systemctl stop zanarkand
 ```
 
 ### Restart the stream
 ```console
-sudo systemctl restart zanarkand
+systemctl restart zanarkand
 ```
 
 ### View the log files
@@ -157,3 +200,4 @@ Afterwards, [restart the stream](#restart-the-stream)
 We can keep an official list of things we might want to add to the stream here
 * A youtube bot that can let chat know that there's an issue
 * Start a video at a specific timestamp
+* Make the standby text configurable.
