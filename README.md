@@ -201,3 +201,4 @@ We can keep an official list of things we might want to add to the stream here
 * A youtube bot that can let chat know that there's an issue
 * Start a video at a specific timestamp
 * Make the standby text configurable.
+* Re-attempt downloading the correct video at the beginning of a random standby video
