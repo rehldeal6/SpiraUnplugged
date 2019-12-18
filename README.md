@@ -122,13 +122,13 @@ If you need to download a specific video, here's what you can do:
 
 #### Downloading using a playlist
 ```console
-youtube-dl --playlist-items <episode number> --format bestvideo --output /opt/zanarkand/media/<game-name>-E<episode-number>.v <playlist URL>"
-youtube-dl --playlist-items <episode number> --format bestaudio --output /opt/zanarkand/media/<game-name>-E<episode-number>.a <playlist URL>"
+youtube-dl --playlist-items <episode number> --format bestvideo --output /opt/zanarkand/media/<game-name>-E<episode-number>.v <playlist URL>
+youtube-dl --playlist-items <episode number> --format bestaudio --output /opt/zanarkand/media/<game-name>-E<episode-number>.a <playlist URL>
 ```
 Example command to download Episode 10 of the FFX playlist in the format the stream needs:
 ```console
-youtube-dl --playlist-items 10 --format bestvideo --output /opt/zanarkand/media/FFX-E10.v https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps"
-youtube-dl --playlist-items 10 --format bestaudio --output /opt/zanarkand/media/FFX-E10.a https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps"
+youtube-dl --playlist-items 10 --format bestvideo --output /opt/zanarkand/media/FFX-E10.v https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps
+youtube-dl --playlist-items 10 --format bestaudio --output /opt/zanarkand/media/FFX-E10.a https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps
 ```
 
 #### Downloading a specific video
