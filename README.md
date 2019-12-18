@@ -99,6 +99,17 @@ systemctl stop zanarkand
 systemctl restart zanarkand
 ```
 
+### Using systemctl as user `Zanarkand`
+If you use the above three commands without `sudo` or without being the `root` (admin) user, you will be prompted with this:
+```
+Authentication is required to restart 'zanarkand.service'.
+Multiple identities can be used for authentication:
+ 1.  Ubuntu (ubuntu)
+ 2.  zanarkand
+Choose identity to authenticate as (1-2):
+```
+Choose `2` and enter in the user's password when prompted.
+
 ### View the log files
 ```console
 tail -f /opt/zanarkand/logs/zanarkand.log
