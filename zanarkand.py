@@ -225,9 +225,13 @@ class Stream(object):
                           audio_bitrate=ffmpeg_opts['audiobitrate'],
                           ar=ffmpeg_opts['audiofrequeny'],
                           g=ffmpeg_opts['groupofpictures'])\
-                  .run(quiet=True)
+                  .run(capture_stdout=True,
+                       capture_stderr=True,
+                       quiet=True)
         except ffmpeg.Error as err:
-            logging.error("Error while streaming %s-E%s: %s", self.media.name, self.episode, err)
+            logging.error("Error while streaming %s-E%s.", self.media.name, self.episode)
+            logging.error("\tstdout: %s", e.stdout.decode('utf8'))
+            logging.error("\tstderr: %s", e.stderr.decode('utf8'))
         return
 
 def stream_longer_standby(standby_directory, ffmpeg_opts):
@@ -279,9 +283,13 @@ def stream_longer_standby(standby_directory, ffmpeg_opts):
                           audio_bitrate=ffmpeg_opts['audiobitrate'],
                           ar=ffmpeg_opts['audiofrequeny'],
                           g=ffmpeg_opts['groupofpictures'])\
-                  .run(quiet=True)
+                  .run(capture_stdout=True,
+                       capture_stderr=True,
+                       quiet=True)
         except ffmpeg.Error as err:
-            logging.error("Error while streaming %s: %s", video, err)
+            logging.error("Error while streaming %s.", video)
+            logging.error("\tstdout: %s", e.stdout.decode('utf8'))
+            logging.error("\tstderr: %s", e.stderr.decode('utf8'))
     return
 
 def stream_initial_standby(standby_video, output):
@@ -296,9 +304,13 @@ def stream_initial_standby(standby_video, output):
         logging.info("Starting initial standby video %s", standby_video)
         ffmpeg.input(standby_video, re=None)\
               .output(output, format="flv")\
-              .run(quiet=True)
+              .run(capture_stdout=True,
+                   capture_stderr=True,
+                   quiet=True)
     except ffmpeg.Error as err:
-        logging.error("Error while streaming %s: %s", standby_video, err)
+        logging.error("Error while streaming %s.", standby_video)
+        logging.error("\tstdout: %s", e.stdout.decode('utf8'))
+        logging.error("\tstderr: %s", e.stderr.decode('utf8'))
     return
 
 def media_files_exist(media_directory, media, episode):
