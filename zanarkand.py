@@ -230,8 +230,8 @@ class Stream(object):
                        quiet=True)
         except ffmpeg.Error as err:
             logging.error("Error while streaming %s-E%s.", self.media.name, self.episode)
-            logging.error("\tstdout: %s", e.stdout.decode('utf8'))
-            logging.error("\tstderr: %s", e.stderr.decode('utf8'))
+            logging.error("\tstdout: %s", err.stdout.decode('utf8'))
+            logging.error("\tstderr: %s", err.stderr.decode('utf8'))
         return
 
 def stream_longer_standby(standby_directory, ffmpeg_opts):
@@ -288,8 +288,8 @@ def stream_longer_standby(standby_directory, ffmpeg_opts):
                        quiet=True)
         except ffmpeg.Error as err:
             logging.error("Error while streaming %s.", video)
-            logging.error("\tstdout: %s", e.stdout.decode('utf8'))
-            logging.error("\tstderr: %s", e.stderr.decode('utf8'))
+            logging.error("\tstdout: %s", err.stdout.decode('utf8'))
+            logging.error("\tstderr: %s", err.stderr.decode('utf8'))
     return
 
 def stream_initial_standby(standby_video, output):
@@ -309,8 +309,8 @@ def stream_initial_standby(standby_video, output):
                    quiet=True)
     except ffmpeg.Error as err:
         logging.error("Error while streaming %s.", standby_video)
-        logging.error("\tstdout: %s", e.stdout.decode('utf8'))
-        logging.error("\tstderr: %s", e.stderr.decode('utf8'))
+        logging.error("\tstdout: %s", err.stdout.decode('utf8'))
+        logging.error("\tstderr: %s", err.stderr.decode('utf8'))
     return
 
 def media_files_exist(media_directory, media, episode):
