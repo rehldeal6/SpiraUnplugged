@@ -1,7 +1,7 @@
 # SpiraUnplugged
 
 ## Overview
-Welcome to the stream that never sleeps! This software is essentially a Remake/Remaster of Topher's beautiful program that has keep the stream alive for over a year. Due to Topher not being around anymore to help debug issues that we've seen with the stream, we decided to re-write the software for a few reasons.
+Welcome to the stream that never sleeps! This software is essentially a Remake/Remaster of Topher's beautiful program that has kept the stream alive for over a year. Due to Topher not being around anymore to help debug issues that we've seen with the stream, we decided to re-write the software for a few reasons.
 1. Topher's software on the server is compiled. This means that we are unable to make any changes or read the code to see what he's doing.
 2. Python is a little bit easier to read (if anyone cared to read it) and the code can be edited on the server. After restarting the software, the change takes place
 3. Berk had a few new ideas and upgrades for the stream. If we wanted to incorporate these changes, we pretty much had to re-write the software.
