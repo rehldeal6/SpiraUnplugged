@@ -77,6 +77,7 @@ class Media(object):
             if not os.path.exists(filename):
                 logging.info("Downloading %s", filename)
                 ytdl_options_video = {"quiet": True,
+                                      "cachedir": False,
                                       "outtmpl": filename}
                 if self.type == "playlist":
                     ytdl_options_video["playlist_items"] = str(episode)
@@ -268,7 +269,7 @@ class Stream(object):
             logging.error("Couldn't open or write script file: %s", ioe)
         return
 
-def stream_longer_standby(standby_directory, ffmpeg_opts):
+def stream_longer_standby(standby_directory, ffmpeg_opts, webhook):
     '''
     Use ffmpeg to stream the current a random standby video
 
@@ -322,11 +323,11 @@ def stream_longer_standby(standby_directory, ffmpeg_opts):
                        quiet=True)
         except ffmpeg.Error as err:
             logging.error("Error while streaming %s.", video)
-            logging.error("\tstdout: %s", err.stdout.decode('utf8'))
             logging.error("\tstderr: %s", err.stderr.decode('utf8'))
+            DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[2000:]).execute()
     return
 
-def stream_initial_standby(standby_video, output):
+def stream_initial_standby(standby_video, output, webhook):
     '''
     Use ffmpeg to stream the current a random standby video
 
@@ -343,8 +344,8 @@ def stream_initial_standby(standby_video, output):
                    quiet=True)
     except ffmpeg.Error as err:
         logging.error("Error while streaming %s.", standby_video)
-        logging.error("\tstdout: %s", err.stdout.decode('utf8'))
         logging.error("\tstderr: %s", err.stderr.decode('utf8'))
+        DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[2000:]).execute()
     return
 
 def media_files_exist(media_directory, media, episode):
@@ -442,8 +443,8 @@ def main():
 
     stream = Stream(config.get("order"), media_dictionary, status.get("position", 1), status.get("episode", 1), status.get("loop", 1))
     stream.set_subtitles(config["ffmpeg"])
-    initial_standby = Process(target=stream_initial_standby, args=(initial_standby_video, config["ffmpeg"]["filename"],))
-    longer_standby = Process(target=stream_longer_standby, args=(standby_directory, config["ffmpeg"],))
+    initial_standby = Process(target=stream_initial_standby, args=(initial_standby_video, config["ffmpeg"]["filename"], webhook))
+    longer_standby = Process(target=stream_longer_standby, args=(standby_directory, config["ffmpeg"], webhook))
     initial_standby_played = False
     previous_media = None
     download_next = None
