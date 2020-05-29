@@ -13,7 +13,8 @@ setup(name='zanarkand',
           "discord-webhook",
           "ffmpeg-python",
           "psutil",
-          "youtube-dl"
+          "youtube-dl",
+          "PyYAML"
       ],
       classifiers=[
         'Operating System :: POSIX :: Linux',
