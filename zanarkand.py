@@ -183,6 +183,7 @@ class Stream(object):
         media_directory     [str]  Directory containing media files
         overlay             [str]  Location of the overlay to put on top of the video
         ffmpeg_opts         [dict] Dictionary of ffmpeg options used
+        webhook             [str] Discord webhook for notifications
         '''
         overlay_input = ffmpeg.input(overlay)\
                                .filter("ass",
@@ -276,6 +277,7 @@ def stream_longer_standby(standby_directory, ffmpeg_opts, webhook):
     Inputs:
     standby_directory   [str]  Directory containing pre-downloaded standby videos
     ffmpeg_opts         [dict] Dictionary of ffmpeg options used
+    webhook             [str] Discord webhook for notifications
     '''
     while True:
         try:
