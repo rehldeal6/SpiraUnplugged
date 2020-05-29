@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-from __future__ import unicode_literals
+#!/usr/bin/env python3
 #TODO: - Check to see if ffmpeg can start a video on a specific timestamp
 #      - Add in bot to send messages to YT stream chat
 
@@ -120,7 +119,7 @@ class Stream(object):
         self.media_dictionary = media_dictionary
 
 
-    def next(self):
+    def next_video(self):
         '''
         Set the stream to play the next episode
         '''
@@ -154,7 +153,7 @@ class Stream(object):
         download_media = self.media
         download_loop = self.loop
         download_position = self.position
-        for _ in xrange(1, number + 1):
+        for _ in range(1, number + 1):
             if download_episode < download_media.ending:
                 download_episode += 1
                 while download_episode in download_media.exclude and download_episode < download_media.ending:
@@ -175,7 +174,7 @@ class Stream(object):
             download.join()
         return
 
-    def stream_video(self, media_directory, overlay, ffmpeg_opts):
+    def stream_video(self, media_directory, overlay, ffmpeg_opts, webhook):
         '''
         Use ffmpeg to stream the current stream episode
 
@@ -184,19 +183,9 @@ class Stream(object):
         overlay             [str]  Location of the overlay to put on top of the video
         ffmpeg_opts         [dict] Dictionary of ffmpeg options used
         '''
-        if self.media.type == "playlist":
-            current_text = "Now: {} (E{}/{})".format(self.media.name, self.episode, self.media.ending)
-        else:
-            current_text = "Now: Intermission"
         overlay_input = ffmpeg.input(overlay)\
-                              .drawtext(text=current_text,
-                                        x=ffmpeg_opts['text']['x'],
-                                        y=ffmpeg_opts['text']['y'],
-                                        escape_text=False,
-                                        fontsize=ffmpeg_opts['text']['fontsize'],
-                                        fontcolor=ffmpeg_opts['text']['fontcolor'],
-                                        font=ffmpeg_opts['text']['font'],
-                                        fontfile=ffmpeg_opts['text']['fontfile'])
+                               .filter("ass",
+                                       filename=ffmpeg_opts['subtitles']['final'])
         video = ffmpeg.input("{}{}-E{}.v".format(media_directory, self.media.name, self.episode), re=None)\
                       .video\
                       .filter("scale",
@@ -230,8 +219,53 @@ class Stream(object):
                        quiet=True)
         except ffmpeg.Error as err:
             logging.error("Error while streaming %s-E%s.", self.media.name, self.episode)
-            logging.error("\tstdout: %s", err.stdout.decode('utf8'))
-            logging.error("\tstderr: %s", err.stderr.decode('utf8'))
+            DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[2000:]).execute()
+        return
+    def set_subtitles(self, ffmpeg_opts):
+        # Set up .ass script
+        before_games = []
+        for game in self.order[:self.position-1]:
+            if self.media_dictionary[game].type == "playlist":
+                before_games.append(game)
+        before = "→".join(before_games)
+        if before:
+            before += "→"
+        after_games = []
+        for game in self.order[self.position:]:
+            if self.media_dictionary[game].type == "playlist":
+                after_games.append(game)
+        after = "→".join(after_games)
+        if after:
+            after = "→" + after
+        if self.media.type == "playlist":
+            current_game = "{} (Ep {}/{} Loop {}/{})".format(self.media.name,
+                                                             self.episode,
+                                                             self.media.ending,
+                                                             self.loop,
+                                                             self.media.loops)
+        else:
+            current_game = self.media.name
+        dialogue = ""
+        if before:
+            dialogue += "{\\c&H7F7F7F&\\fscx100\\fscy100\\pos(960,85)}"
+            dialogue += "{}".format(before)
+            dialogue += "{\\c&H00FFFF&\\fscx130\\fscy130}"
+            dialogue += "{}".format(current_game)
+        else:
+            dialogue += "{\\c&H00FFFF&\\fscx130\\fscy130\\pos(960,85)}"
+            dialogue += "{}".format(current_game)
+        if after:
+            dialogue += "{\\c&H7F7F7F&\\u0\\fscx100\\fscy100}"
+            dialogue += "{}".format(after)
+        logging.debug("Subtitle should read %s", dialogue)
+        try:
+            with open(ffmpeg_opts['subtitles']['template'], 'r') as st:
+                content = st.read().rstrip()
+            content += dialogue
+            with open(ffmpeg_opts['subtitles']['final'], 'w') as sf:
+                sf.write(content)
+        except IOError as ioe:
+            logging.error("Couldn't open or write script file: %s", ioe)
         return
 
 def stream_longer_standby(standby_directory, ffmpeg_opts):
@@ -373,7 +407,6 @@ def main():
                 logging.error("Directory %s specified in the configuration does not exist", check_dir)
                 sys_exit(1)
     standby_directory = config.get("standbydirectory", "/opt/zanarkand/standby/")
-    log_directory = config.get("logdirectory", "/opt/zanarkand/logs/")
     media_directory = config.get("mediadirectory", "/opt/zanarkand/media/")
     initial_standby_video = config.get("initialstandbyvideo", "/opt/zanarkand/resouces/standby.flv")
 
@@ -382,8 +415,8 @@ def main():
     if args.debug:
         log_level = logging.DEBUG
     logging.basicConfig(level=log_level,
-                        filemode='a',
-                        filename="{}Zanarkand.log".format(log_directory),
+                        #filemode='a',
+                        #filename="{}Zanarkand.log".format(log_directory),
                         format='%(asctime)s %(levelname)s: %(message)s',
                         datefmt='%d-%b-%y %H:%M:%S')
     logging.info("Starting Stream...")
@@ -408,6 +441,7 @@ def main():
             sys_exit(1)
 
     stream = Stream(config.get("order"), media_dictionary, status.get("position", 1), status.get("episode", 1), status.get("loop", 1))
+    stream.set_subtitles(config["ffmpeg"])
     initial_standby = Process(target=stream_initial_standby, args=(initial_standby_video, config["ffmpeg"]["filename"],))
     longer_standby = Process(target=stream_longer_standby, args=(standby_directory, config["ffmpeg"],))
     initial_standby_played = False
@@ -418,8 +452,8 @@ def main():
         download_attempts = 0
         while not media_files_exist(media_directory, stream.media.name, stream.episode):
             if not initial_standby.is_alive() and not initial_standby_played:
-                initial_standby.start()
                 logging.warning("Could not find media files for %s-E%s. Switching to standby", stream.media.name, stream.episode)
+                initial_standby.start()
             elif initial_standby.is_alive() and not initial_standby_played:
                 initial_standby.join()
                 initial_standby_played = True
@@ -435,7 +469,7 @@ def main():
                 download_attempts += 1
         if initial_standby.is_alive():
             kill_process(initial_standby.pid)
-        streaming = Process(target=stream.stream_video, args=(media_directory, config.get("overlay"), config["ffmpeg"]))
+        streaming = Process(target=stream.stream_video, args=(media_directory, config.get("overlay"), config["ffmpeg"], webhook))
         streaming.start()
 
         # Update status
@@ -462,9 +496,13 @@ def main():
                 kill_process(download_next.pid)
         download_next = Process(target=stream.download_next_n_episodes, args=(number_of_downloads, media_directory, webhook))
         download_next.start()
+
+        #Sleep so that the video plays the correct subtitles
+        sleep(10)
         # Set up for next episode
         previous_media = "{}{}-E{}".format(media_directory, stream.media.name, stream.episode)
-        stream.next()
+        stream.next_video()
+        stream.set_subtitles(config["ffmpeg"])
 
         # Wait until Stream ends
         streaming.join()
