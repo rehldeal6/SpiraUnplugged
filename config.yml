@@ -1,13 +1,12 @@
 youtube_key: 32vs-4k2f-wrjz-epcs
 current_status: /opt/zanarkand/current_status.yml
 initialstandbyvideo: /opt/zanarkand/standby/standby.flv
-numberofdownloads: 1
+numberofdownloads: 3
 downloadattempts: 5
 faileddownloadwait: 60
 overlay: /opt/zanarkand/resources/1080overlay.png
 standbydirectory: /opt/zanarkand/standby/
 mediadirectory: /opt/zanarkand/media/
-logdirectory: /opt/zanarkand/logs/
 discordwebhook: https://discordapp.com/api/webhooks/639261337503137799/njlDSkXJ9HVNp88fYq5an0mcy9i1K50kn-a3iKd1ye1lpis9XOF6AmnLS_pBsPyfsBFR
 
 ffmpeg:
@@ -36,7 +35,7 @@ ffmpeg:
     x: 5
     y: 52
   subtitles:
-    template: /opt/zanarkand/fonts/template.ass
+    template: /opt/zanarkand/template.ass
     final: /opt/zanarkand/fonts/current.ass
 
 order:

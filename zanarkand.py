@@ -416,8 +416,6 @@ def main():
     if args.debug:
         log_level = logging.DEBUG
     logging.basicConfig(level=log_level,
-                        #filemode='a',
-                        #filename="{}Zanarkand.log".format(log_directory),
                         format='%(asctime)s %(levelname)s: %(message)s',
                         datefmt='%d-%b-%y %H:%M:%S')
     logging.info("Starting Stream...")
