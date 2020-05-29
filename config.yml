@@ -1,13 +1,12 @@
 youtube_key: 32vs-4k2f-wrjz-epcs
-current_status: /home/rehlj/SpiraUnplugged/current_status.yml
-initialstandbyvideo: /home/rehlj/SpiraUnplugged/resources/standby.flv
+current_status: /opt/zanarkand/current_status.yml
+initialstandbyvideo: /opt/zanarkand/standby/standby.flv
 numberofdownloads: 3
 downloadattempts: 5
 faileddownloadwait: 60
-overlay: /home/rehlj/SpiraUnplugged/resources/1080overlay.png
-standbydirectory: /home/rehlj/SpiraUnplugged/standby/
-mediadirectory: /home/rehlj/SpiraUnplugged/media/
-logdirectory: /home/rehlj/SpiraUnplugged/logs/
+overlay: /opt/zanarkand/resources/1080overlay.png
+standbydirectory: /opt/zanarkand/standby/
+mediadirectory: /opt/zanarkand/media/
 discordwebhook: https://discordapp.com/api/webhooks/639261337503137799/njlDSkXJ9HVNp88fYq5an0mcy9i1K50kn-a3iKd1ye1lpis9XOF6AmnLS_pBsPyfsBFR
 
 ffmpeg:
@@ -35,24 +34,27 @@ ffmpeg:
     fontcolor: yellow
     x: 5
     y: 52
+  subtitles:
+    template: /opt/zanarkand/template.ass
+    final: /opt/zanarkand/fonts/current.ass
 
 order:
- - FFVII
- - FFX
- - FFVIII
- - FFX
- - FFIX
- - FFX
- - FFX2
- - Intermission
- - FFXII
- - FFX
- - FFXIII
- - FFXIII2
- - FFX
- - FFX2
- - FFXV
- - Birthday
+ - FFVII         # 1
+ - FFX           # 2
+ - FFVIII        # 3
+ - FFX           # 4
+ - FFIX          # 5
+ - FFX           # 6
+ - FFX-2         # 7
+ - Intermission  # 8
+ - FFXII         # 9
+ - FFX           # 10
+ - FFXIII        # 11
+ - FFXIII-2      # 12
+ - FFX           # 13
+ - FFX-2         # 14
+ - FFXV          # 15
+ - Birthday      # 16
 
   #Template:
   #<Name of Game/Video> (NEEDS to match entry in 'order' section)       **REQUIRED**
