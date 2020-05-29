@@ -393,14 +393,14 @@ def main():
             sys_exit(1)
 
     #Check mandatory options:
-    for mandatory in ["youtube_key", "mediadirectory", "standbydirectory", "logdirectory", "order", "sections", "discordwebhook"]:
+    for mandatory in ["youtube_key", "mediadirectory", "standbydirectory", "order", "sections", "discordwebhook"]:
         if mandatory not in config:
             print("Mandatory option {} is not in the config file {}".format(mandatory, args.config))
             logging.error("Mandatory option %s is not in the config file %s", mandatory, args.config)
             sys_exit(1)
 
     # Check folders
-    for check_dir in ["standbydirectory", "logdirectory", "mediadirectory"]:
+    for check_dir in ["standbydirectory", "mediadirectory"]:
         if check_dir in config:
             config[check_dir] = config[check_dir] + "/" if not config[check_dir].endswith('/') else config[check_dir]
             if not os.path.exists(config[check_dir]):
