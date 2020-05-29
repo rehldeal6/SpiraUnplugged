@@ -18,7 +18,7 @@ from yaml import safe_load, YAMLError, safe_dump
 from psutil import Process as p_process
 from discord_webhook import DiscordWebhook
 
-class Media(object):
+class Media:
     '''
     Object for a specific media or game (playlist of single video).
     Contains information such as youtube ID, number of loops, video/audio quality, etc.
@@ -49,7 +49,6 @@ class Media(object):
         elif self.type == "video":
             self.beginning = 1
             self.ending = 1
-        return
 
     def download_episode(self, media_directory, episode, webhook):
         '''
@@ -92,9 +91,8 @@ class Media(object):
                 ytdl.download([download_url])
         if not media_files_exist(media_directory, self.name, episode):
             DiscordWebhook(url=webhook, content='@everyone Failed download episode {}-E{}!'.format(self.name, episode)).execute()
-        return
 
-class Stream(object):
+class Stream:
     '''
     Overall stream object. It contains information about what's currently being played, the order of media to play,
     current loop, etc.
@@ -139,7 +137,6 @@ class Stream(object):
                     self.position += 1
                 self.media = self.media_dictionary[self.order[self.position-1]]
             self.episode = self.media.beginning
-        return
 
     def download_next_n_episodes(self, number, media_directory, webhook):
         '''
@@ -173,7 +170,6 @@ class Stream(object):
             download = Process(target=download_media.download_episode, args=(media_directory, download_episode, webhook,))
             download.start()
             download.join()
-        return
 
     def stream_video(self, media_directory, overlay, ffmpeg_opts, webhook):
         '''
@@ -222,9 +218,14 @@ class Stream(object):
         except ffmpeg.Error as err:
             logging.error("Error while streaming %s-E%s.", self.media.name, self.episode)
             DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[2000:]).execute()
-        return
+
     def set_subtitles(self, ffmpeg_opts):
-        # Set up .ass script
+        '''
+        Create "subtitles" that display the order of the games
+
+        Inputs:
+        ffmpeg_opts         [dict] Dictionary of ffmpeg options used
+        '''
         before_games = []
         for game in self.order[:self.position-1]:
             if self.media_dictionary[game].type == "playlist":
@@ -268,7 +269,6 @@ class Stream(object):
                 sf.write(content)
         except IOError as ioe:
             logging.error("Couldn't open or write script file: %s", ioe)
-        return
 
 def stream_longer_standby(standby_directory, ffmpeg_opts, webhook):
     '''
@@ -327,7 +327,6 @@ def stream_longer_standby(standby_directory, ffmpeg_opts, webhook):
             logging.error("Error while streaming %s.", video)
             logging.error("\tstderr: %s", err.stderr.decode('utf8'))
             DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[2000:]).execute()
-    return
 
 def stream_initial_standby(standby_video, output, webhook):
     '''
@@ -336,6 +335,7 @@ def stream_initial_standby(standby_video, output, webhook):
     Inputs:
     standby_video   [str] Initial default standby video
     output          [str] youtube URL to output
+    webhook             [str] Discord webhook for notifications
     '''
     try:
         logging.info("Starting initial standby video %s", standby_video)
@@ -348,7 +348,6 @@ def stream_initial_standby(standby_video, output, webhook):
         logging.error("Error while streaming %s.", standby_video)
         logging.error("\tstderr: %s", err.stderr.decode('utf8'))
         DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[2000:]).execute()
-    return
 
 def media_files_exist(media_directory, media, episode):
     '''
@@ -375,7 +374,6 @@ def kill_process(parent_pid):
     for child in parent.children(recursive=True):
         child.kill()
     parent.kill()
-    return
 
 def main():
     '''
