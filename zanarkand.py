@@ -291,7 +291,6 @@ def stream_longer_standby(standby_directory, ffmpeg_opts, webhook):
                                     fontcolor="yellow",
                                     fontsize=40,
                                     font=ffmpeg_opts['text']['font'],
-                                    fontfile=ffmpeg_opts['text']['fontfile'],
                                     box=1,
                                     boxcolor="black",
                                     boxborderw=5)\
@@ -301,7 +300,6 @@ def stream_longer_standby(standby_directory, ffmpeg_opts, webhook):
                                     fontcolor="yellow",
                                     fontsize=40,
                                     font=ffmpeg_opts['text']['font'],
-                                    fontfile=ffmpeg_opts['text']['fontfile'],
                                     box=1,
                                     boxcolor="black",
                                     boxborderw=5)

@@ -4,6 +4,9 @@ RUN apk update && \
     apk add ffmpeg git gcc libc-dev linux-headers && \
     rm -rf /var/cache/apk/* && \
     pip3 install git+https://github.com/rehldeal6/SpiraUnplugged.git && \
-    mkdir -p /opt/zanarkand/
+    mkdir -p /opt/zanarkand/ && \
+    mkdir -p /usr/share/fonts/agency-fb-bold
+
+COPY agency-fb-bold.ttf /usr/share/fonts/agency-fb-bold/
 
 ENTRYPOINT ["zanarkand.py"]

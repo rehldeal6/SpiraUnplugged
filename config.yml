@@ -29,7 +29,6 @@ ffmpeg:
   format: flv
   text:
     font: agency-fb-bold
-    fontfile: /opt/zanarkand/fonts/agency-fb-bold.ttf
     fontsize: 35
     fontcolor: yellow
     x: 5
