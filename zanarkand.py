@@ -217,7 +217,7 @@ class Stream:
                        quiet=True)
         except ffmpeg.Error as err:
             logging.error("Error while streaming %s-E%s.", self.media.name, self.episode)
-            DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[2000:]).execute()
+            DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[-2000:]).execute()
 
     def set_subtitles(self, ffmpeg_opts):
         '''
@@ -326,7 +326,7 @@ def stream_longer_standby(standby_directory, ffmpeg_opts, webhook):
         except ffmpeg.Error as err:
             logging.error("Error while streaming %s.", video)
             logging.error("\tstderr: %s", err.stderr.decode('utf8'))
-            DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[2000:]).execute()
+            DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[-2000:]).execute()
 
 def stream_initial_standby(standby_video, output, webhook):
     '''
@@ -347,7 +347,7 @@ def stream_initial_standby(standby_video, output, webhook):
     except ffmpeg.Error as err:
         logging.error("Error while streaming %s.", standby_video)
         logging.error("\tstderr: %s", err.stderr.decode('utf8'))
-        DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[2000:]).execute()
+        DiscordWebhook(url=webhook, content=err.stderr.decode('utf8')[-2000:]).execute()
 
 def media_files_exist(media_directory, media, episode):
     '''
