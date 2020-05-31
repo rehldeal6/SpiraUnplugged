@@ -230,16 +230,16 @@ class Stream:
         for game in self.order[:self.position-1]:
             if self.media_dictionary[game].type == "playlist":
                 before_games.append(game)
-        before = "→".join(before_games)
+        before = "   ".join(before_games)
         if before:
-            before += "→"
+            before += "   "
         after_games = []
         for game in self.order[self.position:]:
             if self.media_dictionary[game].type == "playlist":
                 after_games.append(game)
-        after = "→".join(after_games)
+        after = "   ".join(after_games)
         if after:
-            after = "→" + after
+            after = "   " + after
         if self.media.type == "playlist":
             current_game = "{} (Ep {}/{} Loop {}/{})".format(self.media.name,
                                                              self.episode,

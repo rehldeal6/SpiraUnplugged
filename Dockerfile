@@ -1,12 +1,11 @@
 FROM python@sha256:f8ada9f1093eb4d5301a874cffd3e800761047cbdaae1772f3aaf79abf4082e3
 
 RUN apk update && \
-    apk add ffmpeg git gcc libc-dev linux-headers && \
-    rm -rf /var/cache/apk/* && \
-    pip3 install git+https://github.com/rehldeal6/SpiraUnplugged.git && \
+    apk add --no-cache ffmpeg git gcc libc-dev linux-headers && \
+    pip3 install --no-cache-dir git+https://github.com/rehldeal6/SpiraUnplugged.git && \
     mkdir -p /opt/zanarkand/ && \
-    mkdir -p /usr/share/fonts/agency-fb-bold
+    apk del git
 
-COPY agency-fb-bold.ttf /usr/share/fonts/agency-fb-bold/
+ADD agency-fb-bold.ttf /usr/share/fonts/agency-fb-bold/
 
 ENTRYPOINT ["zanarkand.py"]
