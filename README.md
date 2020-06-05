@@ -85,7 +85,7 @@ position: 6
 since that specific instance of **FFX** is the **6th** entry under `order`. Once the update to the current status file has been made, [restart the stream](#restart-the-stream).
 
 ## Controlling the stream - Docker
-The stream is being run by the `docker` software. `Docker` uses the [zanarkand docker image](https://hub.docker.com/repository/docker/rehldeal/zanarkand) and puts it in a "container". This image contains all of the required software that is needed in order to run the stream. In order to run the following commands, your user account needs to be in the `docker` group on the server. If your user is not in the group, run the command `sudo usermod -aG docker <your username>`.
+The stream is being run by the `docker` software. `Docker` uses the [zanarkand docker image](https://hub.docker.com/repository/docker/rehldeal/zanarkand) (account required) and puts it in a "container". This image contains all of the required software that is needed in order to run the stream. In order to run the following commands, your user account needs to be in the `docker` group on the server. If your user is not in the group, run the command `sudo usermod -aG docker <your username>`.
 
 ### Before creating the docker container
 Before you create the docker container, there needs to be a directory on the server that looks like the [Folder Structure and File Information](https://github.com/rehldeal6/SpiraUnplugged/blob/master/README.md#folder-structure-and-file-information) section (probably in `/opt/zanarkand/` on the server). This is so the container can use that directory to run properly. Ensure all of the settings in `config.yml` are correct (especially `youtube_key`). The `setup.sh` script is used to create all of the needed directories and videos and is mapped to the `/opt/zanarkand` directory inside the image (see the `-v` flag in the command below)
@@ -204,15 +204,20 @@ youtube-dl --format 140 --output /opt/zanarkand/media/FFX-E10.a https://www.yout
 This part of the README is designed to grow as we come across problems related to this software. We should document any fixes to the stream here.
 
 ### Youtube-dl needs updating
-The most common issue that we come across is that youtube-dl needs updating. When this happens, the stream fails to download the upcoming episodes. The tech-support discord channel should be notified when this occues and the stream _should_ try to automatically update. If this still fails, the container image needs to be rebuilt, published, and updated on the server.
+The most common issue that we come across is that youtube-dl needs updating. When this happens, the stream fails to download the upcoming episodes. The tech-support discord channel should be notified when this occues and the stream _should_ try to automatically update. If this still fails, the container image needs to be rebuilt, published, and updated on the server. To view the current version number, visit the [zanarkand docker image page](https://hub.docker.com/repository/docker/rehldeal/zanarkand) (account required).
+This can be run on a development area or on the stream itself:
 ```console
 cd /opt/zanarkand
-docker container build -t rehldeal/zanarkanda --no-cache
+docker container build -t zanarkand:<new image version> --no-cache
+docker image tag zanarkand:<new image version> rehldeal/zanarkand:<new image version>
 docker image push rehldeal/zanarkand:<new image version>
+```
+This part must be run on the stream server:
+```console
+docker image pull rehldeal/zanarkand:<new image version>
 docker container stop zanarkand
 docker container rm zanarkand
-docker pull rehldeal/zanarkand:<new image version>
-docker container run --name zanarkand -v /opt/zanarkand:/opt/zanarkand
+docker container run --name zanarkand -v /opt/zanarkand:/opt/zanarkand rehldeal/zanarkand:<new image version>
 ```
 
 ## TODOs
