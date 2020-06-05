@@ -1,10 +1,16 @@
 #!/bin/bash
 
-mkdir $(pwd)/standby
-mkdir $(pwd)/media
-mkdir $(pwd)/resources
+ if [ ! -d $(pwd)/standby ]; then
+     mkdir $(pwd)/standby
+ fi
+ if [ ! -d $(pwd)/media ]; then
+     mkdir $(pwd)/media
+ fi
+ if [ ! -d $(pwd)/resources ]; then
+     mkdir $(pwd)/resources
+ fi
 
-youtube-dl -f flv https://www.youtube.com/watch?v=r3SpJYsAr0A -o "$(pwd)/standby/standby.flv"
+youtube-dl https://www.youtube.com/watch?v=NhcsKAUBLb0 -o "$(pwd)/standby/standby.%(ext)s"
 youtube-dl --playlist-items 135 https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps -o "$(pwd)/standby/%(title)s"
 youtube-dl --playlist-items 136 https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps -o "$(pwd)/standby/%(title)s"
 youtube-dl --playlist-items 137 https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps -o "$(pwd)/standby/%(title)s"
