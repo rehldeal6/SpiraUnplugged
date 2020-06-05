@@ -24,7 +24,6 @@ The main bulk of the code and files are stored on the server in the `/opt/zanark
                media/
                resources/
                standby/
-               template.ass
                setup.py
                setup.sh
 ```
@@ -32,8 +31,8 @@ The main bulk of the code and files are stored on the server in the `/opt/zanark
 * `current_status.yml` - Contains the information about the current video being played. Used when the stream software is restarted so it knows where to pick up from.
 * `zanarkand.py` - The main piece of software.
 * `media/` - Directory containing the audio and video files of the youtube videos
-* `resources` - Directory containing additional resources needed for the stream (overlay image, standby video, etc.)
-* `standby` - Directory containing the pre-downlowned videos used for standby
+* `resources/` - Directory containing additional resources needed for the stream (overlay image, subtitles, etc.)
+* `standby/` - Directory containing the pre-downlowned videos used for standby
 
 There are also some files not needed for the software to _run_, but for setup functions:
 * `Dockerfile` - Used to create the docker image to bundle the software together
@@ -43,15 +42,18 @@ There are also some files not needed for the software to _run_, but for setup fu
 ## Common Tasks
 
 ### Changing the overlay
-The overlay file is configued in `config.yml` associated with the **overlay** keywork. So for example, in this repository, **overlay** is configured to be `/opt/zanarkand/resources/1080overlay.png`. In order to make an update to that file, one needs to copy the file off the server, make the update, and put the file back onto the server in the correct location. A common program that can be used to transfer the file on or off the server is [WinSCP](https://winscp.net/eng/index.php). Once you enter in the server IP address and proper credentials, you can navigate to the file and transfer it to/from desktop. Once the overlay file has been updated, it will be applied to the next video in the stream.
+The overlay file is configued in `config.yml` associated with the **overlay** keyword. So for example, in this repository, **overlay** is configured to be `/opt/zanarkand/resources/1080overlay.png`. In order to make an update to that file, one needs to copy the file off the server, make the update, and put the file back onto the server in the correct location. A common program that can be used to transfer the file on or off the server is [WinSCP](https://winscp.net/eng/index.php). Once you enter in the server IP address and proper credentials, you can navigate to the file and transfer it to/from desktop. Once the overlay file has been updated, it will be applied to the next video in the stream.
 
 ### Changing the stream quality
 The stream quality is configured in `config.yml` under the `ffmpeg` section. The most commong setting to change is the `preset` option. The `crf`, `groupofpictures` and some of the bitrate options are also configurable to the quality of the stream. [This ffmpeg link](https://trac.ffmpeg.org/wiki/Encode/H.264) shows the different values that can be used.
 
-Another way to change the stream quality is to update the `videoformatid` and `audioformatid` options under `sections` in `config.yml`. Each video or playlist has an option to specify the video or audio quality. Check out [this section](#view-all-of-the-formats-available-for-a-video) on how to option the types of video and audio formats available for each video or playlist. Once you update the `config.yml` with the new `videoformatid` and/or `audioformatid` with the new values, you need to [restart the stream](#restart-the-stream).
+Another way to change the stream quality is to update the `videoformatid` and `audioformatid` options under `sections` section in `config.yml`. Each video or playlist has an option to specify the video or audio quality. Check out [this section](#view-all-of-the-formats-available-for-a-video) on how to option the types of video and audio formats available for each video or playlist.
+
+If you update `config.yml` at all, you need to [restart the stream](#restart-the-stream).
 
 ### Change the stream schedule
 The stream schedule is configured under the `order` section of `config.yml`. Update the value as needed, but make sure that each entry in `order` **matches up with an entry under `sections`**. If there is something in `order` that does NOT match up with an entry in `sections`, the stream will not be able to start properly.
+
 Once the update to the order has been made, [restart the stream](#restart-the-stream).
 
 ### Changing the standby text
@@ -63,7 +65,7 @@ See [Youtube-dl needs updating](#youtube-dl-needs-updating).
 ### Adding or changing videos that will play during standby
 The standby videos directory is specified in `config.yml` with the `standbydirectory` option. For example, in this repository, it's located at `/opt/zanarkand/standby/`. It contains pre-downloaded videos to play during an extended outage. The streaming software will randomly pick one of these videos in that directory to play during the downtime. To remove a video from being shown during standby, simply delete the video. To add a video to the directory, see [Downloading using a playlist](#downloading-using-a-playlist) or 
 [Downloading a specific video](#downloading-a-specific-video). 
-** PLEASE NOTE ** - When downloading a standby video, please make sure to add the `-o /opt/zanarkand/standby/%(title)s` option to the command. This will make sure the downloaded video will have the proper name.
+** PLEASE NOTE ** - When downloading a standby video, please make sure to add the `--output /opt/zanarkand/standby/%(title)s` option to the command. This will make sure the downloaded video will have the proper name.
 
 ### Changing the currently streaming video to play another video
 In `config.yml` there is an option called `current_status` that points to the file that handles the currently streaming video. It's probably in `/opt/zanarkand/current_status.yml`. It should look something like this (this is the very first video of the stream):
@@ -125,7 +127,7 @@ If you want a live feed of the logs
 
 ## Helpful commands
 ### Using Youtube-DL
-The stream looks for videos in the `/opt/zanarkand/media/` folder. It looks for it in a specific format:
+The stream looks for videos in the `/opt/zanarkand/media/` folder (or whatever is configured for `mediadirectory` in `config.yml`). It looks for these videos in a specific format:
 ```
 <game-name>-E<episode-number>.v
 <game-name>-E<episode-number>.a
