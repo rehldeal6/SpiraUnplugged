@@ -1,6 +1,6 @@
 youtube_key: 32vs-4k2f-wrjz-epcs
 current_status: /opt/zanarkand/current_status.yml
-initialstandbyvideo: /opt/zanarkand/standby/standby.flv
+initialstandbyvideo: /opt/zanarkand/standby/standby.mkv
 numberofdownloads: 3
 downloadattempts: 5
 faileddownloadwait: 60
@@ -34,7 +34,7 @@ ffmpeg:
     x: 5
     y: 52
   subtitles:
-    template: /opt/zanarkand/resourcestemplate.ass
+    template: /opt/zanarkand/resources/template.ass
     final: /opt/zanarkand/resources/current.ass
 
 order:
