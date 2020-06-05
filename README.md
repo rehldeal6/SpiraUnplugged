@@ -12,6 +12,7 @@ There are three main pieces of software that this program uses that are essentia
 1. [ffmpeg](https://www.ffmpeg.org/) - "A complete, cross-platform solution to record, convert and stream audio and video."
 2. [youtube-dl](https://ytdl-org.github.io/youtube-dl/index.html) - "A command-line program to download videos from YouTube.com"
 3. zanarkand.py - The software I wrote that brings everything together.
+4. [docker](https://www.docker.com/resources/what-container) - Software bundling
 
 ## Folder Structure and File Information
 The main bulk of the code and files are stored on the server in the `/opt/zanarkand/` directory. From there, there are specific and important directories that need to exist:
@@ -20,24 +21,24 @@ The main bulk of the code and files are stored on the server in the `/opt/zanark
                config.yml
                current_status.yml
                zanarkand.py
-               fonts/
-               logs/
                media/
                resources/
                standby/
+               template.ass
+               setup.py
+               setup.sh
 ```
 * `config.yml` - Contains all of the stream configuration. Options should hopefully be self explanatory, and should really only be updated if there's a new playlist or video to add, or if the stream quality needs to go up/down.
 * `current_status.yml` - Contains the information about the current video being played. Used when the stream software is restarted so it knows where to pick up from.
 * `zanarkand.py` - The main piece of software.
-* `fonts/` - Directory containing the fonts files (The one that we mostly use is `agency-fb-bold.ttf`)
-* `logs/` - Directory containing the log files written by the stream software
 * `media/` - Directory containing the audio and video files of the youtube videos
 * `resources` - Directory containing additional resources needed for the stream (overlay image, standby video, etc.)
 * `standby` - Directory containing the pre-downlowned videos used for standby
 
-There are a few other files that are used by the stream...
-* `/lib/systemd/system/zanarkand.service` - A file that makes the stream software a system service, makes it easier to stop/start/restart the software.
-* `/etc/logrotate.d/zanarkand` - A file that "rotates" the log file, so that it doesn't continuously grow forever and eat up disk space.
+There are also some files not needed for the software to _run_, but for setup functions:
+* `Dockerfile` - Used to create the docker image to bundle the software together
+* `setup.py` - Used by the Dockerfile to install the zanarkand software in the image
+* `setup.sh` - A small script that is run on a new server so that the proper directories and videos are downloaded
 
 ## Common Tasks
 
@@ -62,7 +63,7 @@ See [Youtube-dl needs updating](#youtube-dl-needs-updating).
 ### Adding or changing videos that will play during standby
 The standby videos directory is specified in `config.yml` with the `standbydirectory` option. For example, in this repository, it's located at `/opt/zanarkand/standby/`. It contains pre-downloaded videos to play during an extended outage. The streaming software will randomly pick one of these videos in that directory to play during the downtime. To remove a video from being shown during standby, simply delete the video. To add a video to the directory, see [Downloading using a playlist](#downloading-using-a-playlist) or 
 [Downloading a specific video](#downloading-a-specific-video). 
-**NOTE**: The stream will display the name of the video being played, and it keys off of the video filename. Please make sure to remove any extranneous information from the filename. By default, it appends the video ID on the end of the video. For example, if you were to download the video `Final Fantasy X - Storyline Boss Guide - AI, Tips & Tricks`, it'll download it as `Final Fantasy X - Storyline Boss Guide - AI, Tips & Tricks-d1Qft-LVGgI.mp4`. Remove the `-d1Qft-LVGgI` at the end so it just looks like `Final Fantasy X - Storyline Boss Guide - AI, Tips & Tricks.mp4` in order for the name to be displayed properly on the stream.
+** PLEASE NOTE ** - When downloading a standby video, please make sure to add the `-o /opt/zanarkand/standby/%(title)s` option to the command. This will make sure the downloaded video will have the proper name.
 
 ### Changing the currently streaming video to play another video
 In `config.yml` there is an option called `current_status` that points to the file that handles the currently streaming video. It's probably in `/opt/zanarkand/current_status.yml`. It should look something like this (this is the very first video of the stream):
@@ -81,41 +82,46 @@ position: 6
 ```
 since that specific instance of **FFX** is the **6th** entry under `order`. Once the update to the current status file has been made, [restart the stream](#restart-the-stream).
 
-## Controlling the stream
-Due to that `zanarkand.service` file, it's now super easy to start, stop, and restart the stream on the command line. 
+## Controlling the stream - Docker
+The stream is being run by the `docker` software. `Docker` uses the [zanarkand docker image](https://hub.docker.com/repository/docker/rehldeal/zanarkand) and puts it in a "container". This image contains all of the required software that is needed in order to run the stream. In order to run the following commands, your user account needs to be in the `docker` group on the server. If your user is not in the group, run the command `sudo usermod -aG docker <your username>`.
+
+### Before creating the docker container
+Before you create the docker container, there needs to be a directory on the server that looks like the [Folder Structure and File Information](folder-structure-and-file-information) section (probably in `/opt/zanarkand/` on the server). This is so the container can use that directory to run properly. Ensure all of the settings in `config.yml` are correct (especially `youtube_key`). The `setup.sh` script is used to create all of the needed directories and videos and is mapped to the `/opt/zanarkand` directory inside the image (see the `-v` flag in the command below)
+
+### Create the Docker container
+To create the container, run this command:
+```console
+docker container run --name zanarkand -v /opt/zanarkand/:/opt/zanarkand/ rehldeal/zanarkand:<version number>
+```
+The first `/opt/zanarkand/` (the part before the `:`) is the local directory that will be mapped to the `/opt/zanarkand` directory in the image. This can be changed to where the files are located on the local server.
+
+To get the version numbers, consult the [zanarkand docker image](https://hub.docker.com/repository/docker/rehldeal/zanarkand) page. Once this command is run, the 
 
 ### Start the stream
 ```console
-systemctl start zanarkand
+docker container start zanarkand
 ```
 
 ### Stop the stream
 ```console
-systemctl stop zanarkand
+docker container stop zanarkand
 ```
 
 ### Restart the stream
 ```console
-systemctl restart zanarkand
+docker restart zanarkand
 ```
 
-### Using systemctl as user `Zanarkand`
-If you use the above three commands without `sudo` or without being the `root` (admin) user, you will be prompted with this:
-```
-Authentication is required to restart 'zanarkand.service'.
-Multiple identities can be used for authentication:
- 1.  Ubuntu (ubuntu)
- 2.  zanarkand
-Choose identity to authenticate as (1-2):
-```
-Choose `2` and enter in the user's password when prompted.
-
-### View the log files
+### View the stream logs
 ```console
-tail -f /opt/zanarkand/logs/zanarkand.log
+docker container logs zanarkand
 ```
+or
+```console
+docker container logs -f zanarkand
+```
+If you want a live feed of the logs
 
-If you are using a desktop environment for the stream, then there should be executables you can double click that will perform these same actions.
 
 ## Helpful commands
 ### Using Youtube-DL
@@ -196,16 +202,16 @@ youtube-dl --format 140 --output /opt/zanarkand/media/FFX-E10.a https://www.yout
 This part of the README is designed to grow as we come across problems related to this software. We should document any fixes to the stream here.
 
 ### Youtube-dl needs updating
-The most common issue that we come across is that youtube-dl needs updating. When this happens, the stream fails to download the upcoming episodes. The tech-support discord channel should be notified when this occues and the stream _should_ try to automatically update. If this still fails, perform the following on the stream command line.
+The most common issue that we come across is that youtube-dl needs updating. When this happens, the stream fails to download the upcoming episodes. The tech-support discord channel should be notified when this occues and the stream _should_ try to automatically update. If this still fails, the container image needs to be rebuilt, published, and updated on the server.
 ```console
-sudo youtube-dl -U
+cd /opt/zanarkand
+docker container build -t rehldeal/zanarkanda --no-cache
+docker image push rehldeal/zanarkand:<new image version>
+docker container stop zanarkand
+docker container rm zanarkand
+docker pull rehldeal/zanarkand:<new image version>
+docker container run --name zanarkand -v /opt/zanarkand:/opt/zanarkand
 ```
-or
-```console
-sudo pip install youtube-dl --upgrade
-```
-
-Afterwards, [restart the stream](#restart-the-stream)
 
 ## TODOs
 We can keep an official list of things we might want to add to the stream here
@@ -213,3 +219,4 @@ We can keep an official list of things we might want to add to the stream here
 * Start a video at a specific timestamp
 * Make the standby text configurable.
 * Re-attempt downloading the correct video at the beginning of a random standby video
+* Use docker-compose instead of just docker commands.

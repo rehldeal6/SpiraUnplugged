@@ -34,8 +34,8 @@ ffmpeg:
     x: 5
     y: 52
   subtitles:
-    template: /opt/zanarkand/template.ass
-    final: /opt/zanarkand/fonts/current.ass
+    template: /opt/zanarkand/resourcestemplate.ass
+    final: /opt/zanarkand/resources/current.ass
 
 order:
  - FFVII         # 1
@@ -50,6 +50,7 @@ order:
  - FFX           # 10
  - FFXIII        # 11
  - FFXIII-2      # 12
+ - FFXIII-3      # 13
  - FFX           # 13
  - FFX-2         # 14
  - FFXV          # 15
@@ -116,7 +117,10 @@ sections:
   FFXIII-2:
     type: playlist
     id: PL9wpzJw8GKy4XCYWG7RyNv62Y24vgxVcR
-    loops: 2
+    videoformatid: 137
+  FFXIII-3:
+    type: playlist
+    id: PL9wpzJw8GKy5X2REI5pL7ipD8anVgAnsG
     videoformatid: 137
   FFXV:
     type: playlist
