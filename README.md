@@ -101,17 +101,22 @@ To get the version numbers, consult the [zanarkand docker image](https://hub.doc
 
 ### Start the stream
 ```console
-docker container start zanarkand
+docker-compose up -d
 ```
+or
+```console
+docker-compose run zanarkand -d
+```
+To run it (not in detached mode) in debug mode (for development reasons)
 
 ### Stop the stream
 ```console
-docker container stop zanarkand
+docker-container stop
 ```
 
 ### Restart the stream
 ```console
-docker restart zanarkand
+docker-container restart
 ```
 
 ### View the stream logs
@@ -205,20 +210,10 @@ This part of the README is designed to grow as we come across problems related t
 
 ### Youtube-dl needs updating
 The most common issue that we come across is that youtube-dl needs updating. When this happens, the stream fails to download the upcoming episodes. The tech-support discord channel should be notified when this occues and the stream _should_ try to automatically update. If this still fails, the container image needs to be rebuilt, published, and updated on the server. To view the current version number, visit the [zanarkand docker image page](https://hub.docker.com/repository/docker/rehldeal/zanarkand) (account required).
-This can be run on a development area or on the stream itself:
 ```console
-cd /opt/zanarkand
-docker container build -t zanarkand:<new image version> --no-cache
-docker image tag zanarkand:<new image version> rehldeal/zanarkand:<new image version>
-docker image push rehldeal/zanarkand:<new image version>
+docker-compose up --build --force-recreate -d
 ```
-This part must be run on the stream server:
-```console
-docker image pull rehldeal/zanarkand:<new image version>
-docker container stop zanarkand
-docker container rm zanarkand
-docker container run --name zanarkand -v /opt/zanarkand:/opt/zanarkand rehldeal/zanarkand:<new image version>
-```
+docker 
 
 ## TODOs
 We can keep an official list of things we might want to add to the stream here
