@@ -250,7 +250,7 @@ class Stream:
             current_game = self.media.name
         dialogue = ""
         if before:
-            dialogue += "{\\c&H7F7F7F&\\fscx100\\fscy100\\pos(960,85)}"
+            dialogue += "{\\c&H7F7F7F&\\fscx115\\fscy115\\pos(960,85)}"
             dialogue += "{}".format(before)
             dialogue += "{\\c&H00FFFF&\\fscx130\\fscy130}"
             dialogue += "{}".format(current_game)
@@ -258,7 +258,7 @@ class Stream:
             dialogue += "{\\c&H00FFFF&\\fscx130\\fscy130\\pos(960,85)}"
             dialogue += "{}".format(current_game)
         if after:
-            dialogue += "{\\c&H7F7F7F&\\u0\\fscx100\\fscy100}"
+            dialogue += "{\\c&H7F7F7F&\\u0\\fscx115\\fscy115}"
             dialogue += "{}".format(after)
         logging.debug("Subtitle should read %s", dialogue)
         try:
