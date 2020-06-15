@@ -38,23 +38,23 @@ ffmpeg:
     final: /opt/zanarkand/resources/current.ass
 
 order:
- - FFVII         # 1
- - FFX           # 2
- - FFVIII        # 3
- - FFX           # 4
- - FFIX          # 5
- - FFX           # 6
- - FFX-2         # 7
- - Intermission  # 8
- - FFXII         # 9
- - FFX           # 10
- - FFXIII        # 11
- - FFXIII-2      # 12
- - FFXIII-3      # 13
- - FFX           # 13
- - FFX-2         # 14
- - FFXV          # 15
- - Birthday      # 16
+ - FFVII            # 1
+ - FFX              # 2
+ - FFVIII           # 3
+ - FFX              # 4
+ - FFIX             # 5
+ - FFX Pbirdman Mod # 6
+ - FFX-2            # 7
+ - Intermission     # 8
+ - FFXII            # 9
+ - FFX              # 10
+ - FFXIII           # 11
+ - FFXIII-2         # 12
+ - FFXIII-3         # 13
+ - FFX              # 13
+ - FFX-2            # 14
+ - FFXV             # 15
+ - Birthday         # 16
 
   #Template:
   #<Name of Game/Video> (NEEDS to match entry in 'order' section)       **REQUIRED**
@@ -132,3 +132,7 @@ sections:
   Birthday:
     type: video
     id: I81JBsKzhbU
+  FFX Pbirdman Mod:
+    type: playlist
+    id: PL9wpzJw8GKy7RblnEe2iU-GsWrdpdedKD
+    end: 44
