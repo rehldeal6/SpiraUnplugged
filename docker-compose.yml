@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  zanarkand:
+    image: rehldeal/zanarkand:latest
+    container_name: zanarkand
+    restart: on-failure
+    build:
+      context: .
+    volumes:
+      - .:/opt/zanarkand/
+    
