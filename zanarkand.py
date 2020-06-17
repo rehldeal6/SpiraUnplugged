@@ -8,6 +8,7 @@ from time import sleep
 from random import choice
 from sys import exit as sys_exit
 from subprocess import check_call
+from signal import signal, SIGTERM
 from argparse import ArgumentParser
 from multiprocessing import Process
 
@@ -362,7 +363,7 @@ def media_files_exist(media_directory, media, episode):
 
 def kill_process(parent_pid):
     '''
-    Kill a process and its parent children. Used for the intial standby stream.
+    Kill a process and its children. Used for the intial standby stream.
 
     Inputs:
     parent_pid      [int] PID of the standby process
@@ -372,6 +373,12 @@ def kill_process(parent_pid):
     for child in parent.children(recursive=True):
         child.kill()
     parent.kill()
+
+def stop_zanarkand(signum, frame):
+    '''
+    Handle the child processes when the container/process gets a STOP signal
+    '''
+    kill_process(os.getpid())
 
 def main():
     '''
@@ -505,4 +512,5 @@ def main():
         streaming.join()
 
 if __name__ == "__main__":
+    signal(SIGTERM, stop_zanarkand)
     main()
