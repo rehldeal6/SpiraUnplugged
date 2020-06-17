@@ -384,6 +384,7 @@ def main():
     '''
     main
     '''
+    signal(SIGTERM, stop_zanarkand)
     parser = ArgumentParser()
     parser.add_argument("-c", "--config", help="Main configuration file location", default="/opt/zanarkand/config.yml")
     parser.add_argument("-d", "--debug", help="Enabled debug mode", action="store_true")
@@ -512,5 +513,4 @@ def main():
         streaming.join()
 
 if __name__ == "__main__":
-    signal(SIGTERM, stop_zanarkand)
     main()
