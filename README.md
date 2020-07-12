@@ -100,12 +100,6 @@ The first `/opt/zanarkand/` (the part before the `:`) is the local directory tha
 To get the version numbers, consult the [zanarkand docker image](https://hub.docker.com/repository/docker/rehldeal/zanarkand) page. Once this command is run, the 
 
 ### Start the stream
-***PRE-DOCKER (requires password)***
-```console
-sudo systemctl start zanarkand
-```
-
-***Docker command ***
 ```console
 docker-compose up -d
 ```
@@ -116,36 +110,23 @@ docker-compose run zanarkand -d
 To run it (not in detached mode) in debug mode (for development reasons)
 
 ### Stop the stream
-***PRE-DOCKER (requires password)***
 ```console
-sudo systemctl stop zanarkand
-```
-
-***Docker command ***
-```console
-docker-container stop
+docker-compose stop
 ```
 
 ### Restart the stream
-***PRE-DOCKER (requires password)***
 ```console
-sudo systemctl restart zanarkand
-```
-
-***Docker command ***
-```console
-docker-container restart
+docker-compose restart
 ```
 
 ### View the stream logs
 ```console
 docker container logs zanarkand
 ```
-or
+or, if you want a live feed of the logs
 ```console
 docker container logs -f zanarkand
 ```
-If you want a live feed of the logs
 
 
 ## Helpful commands
