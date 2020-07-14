@@ -53,6 +53,7 @@ Once the software is installed, add your username to the **docker** group.
 ```console
 $ sudo usermod -aG docker <your username>
 ```
+This will require you to log out of the server and re-log in. 
 
 ### Installing Docker-Compose
 One last thing needed is an additional piece of software for Docker called **docker-compose**. This makes controlling the container much simpler. 
@@ -62,8 +63,8 @@ One last thing needed is an additional piece of software for Docker called **doc
 There is one last thing to do in order for the stream to work: you need to download the additional videos that will stay local (for when the stream goes into standby mode).
 This can be accomplished by performing the following commands:
 ```console
-cd ~/zanarkand
-docker container run --v $(pwd):/opt/zanarkand --entrypoint /opt/zanarkand/setup.sh 
+$ cd ~/zanarkand
+$ docker container run --v $(pwd):/opt/zanarkand --entrypoint /opt/zanarkand/setup.sh 
 ```
 This will take quite some time for the downloads the complete. 
 Once you have this completed, that's it! You now have all of the necessary peices for running the stream. To get started with running the stream, go to [Controlling the stream](#controlling-the-stream)
