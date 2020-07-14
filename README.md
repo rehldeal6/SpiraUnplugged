@@ -28,7 +28,7 @@ First think you need to do is install `git` so you can clone this software local
 ```console
 $ sudo apt install -y git
 ```
-Assuming you have a github account to access this repo, you need to connect your account to your user account on the Ubuntu server to your github account.
+Assuming you have a github account to access this repo, you need to connect your Github account to your user account on the Ubuntu server.
 First, run a command to generate **SSH Keys**:
 ```console
 $ ssh-keygen
