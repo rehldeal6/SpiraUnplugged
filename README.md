@@ -16,9 +16,9 @@ There are four main pieces of software that this program uses that are essential
 
 ## Starting from scratch
 So you decided you want to use this software, eh? Well props to you, I think! Here's what you need to do in order for things to get running. This is all assuming you have some version of Ubuntu installed (probably `18.04` or later) and have access to the command line for the server; either through the desktop and bringing up a **Terminal** application or connecting through SSH. All commands also assume you're **NOT** root. You shouldn't be logging in as root directly anyway. If you logged in as `root` and need to make a user, issue the following command
-```
-useradd <username>
-passwd <username>
+```console
+# useradd <username>
+# passwd <username>
 (Enter in password for the new user)
 ```
 Then log out as root and re-log in as the new user. 
