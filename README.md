@@ -64,7 +64,9 @@ There is one last thing to do in order for the stream to work: you need to downl
 This can be accomplished by performing the following commands:
 ```console
 $ cd ~/zanarkand
-$ docker container run --v $(pwd):/opt/zanarkand --entrypoint /opt/zanarkand/setup.sh 
+$ docker-compose build --no-cache
+(this will take some time)
+$ docker container run -v $(pwd):/opt/zanarkand -w /opt/zanarkand --entrypoint sh rehldeal/zanarkand:latest /opt/zanarkand/setup.sh
 ```
 This will take quite some time for the downloads the complete. 
 Once you have this completed, that's it! You now have all of the necessary peices for running the stream. To get started with running the stream, go to [Controlling the stream](#controlling-the-stream)
