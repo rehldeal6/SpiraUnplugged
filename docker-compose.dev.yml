@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  zanarkand:
+    environment:
+      - YOUTUBE_KEY=32vs-4k2f-wrjz-epcs
+    volumes:
+      - ./zanarkand.py:/zanarkand.py
+    entrypoint: /zanarkand.py

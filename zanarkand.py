@@ -8,7 +8,6 @@ from time import sleep
 from random import choice
 from sys import exit as sys_exit
 from subprocess import check_call
-from signal import signal, SIGTERM
 from argparse import ArgumentParser
 from multiprocessing import Process
 
@@ -62,36 +61,36 @@ class Media:
         webhook             [str] Discord webhook for notifications
         '''
 
-        if yt_needs_updating():
-            DiscordWebhook(url=webhook, content='@everyone Youtube-dl needs updating! Attempting to upgrade it myself...').execute()
-            check_call(['youtube-dl', '-U'])
-            check_call(['python', '-m', 'pip', 'install', '--upgrade', 'youtube_dl'])
-        for extension in ["v", "a"]:
-            filename = "{}{}-E{}.{}".format(media_directory, self.name, episode, extension)
-            if os.path.exists("{}.part".format(filename)):
-                logging.warning("%s is partially downloaded. Removing", filename)
-                try:
+        try:
+            if yt_needs_updating():
+                DiscordWebhook(url=webhook, content='@everyone Youtube-dl needs updating! Attempting to upgrade it myself...').execute()
+                check_call(['youtube-dl', '-U'])
+                check_call(['python', '-m', 'pip', 'install', '--upgrade', 'youtube_dl'])
+            for extension in ["v", "a"]:
+                filename = "{}{}-E{}.{}".format(media_directory, self.name, episode, extension)
+                if os.path.exists("{}.part".format(filename)):
+                    logging.warning("%s is partially downloaded. Removing", filename)
                     os.remove("{}.part".format(filename))
-                except OSError as err:
-                    logging.error("Could not remove %s.part: %s", filename, err)
-            if not os.path.exists(filename):
-                logging.info("Downloading %s", filename)
-                ytdl_options_video = {"quiet": True,
-                                      "cachedir": False,
-                                      "outtmpl": filename}
-                if self.type == "playlist":
-                    ytdl_options_video["playlist_items"] = str(episode)
-                    download_url = "https://www.youtube.com/playlist?list={}".format(self.id)
-                elif self.type == "video":
-                    download_url = "https://www.youtube.com/watch?v={}".format(self.id)
-                if extension == "v":
-                    ytdl_options_video["format"] = str(self.videoid)
-                elif extension == "a":
-                    ytdl_options_video["format"] = str(self.audioid)
-                ytdl = youtube_dl.YoutubeDL(ytdl_options_video)
-                ytdl.download([download_url])
-        if not media_files_exist(media_directory, self.name, episode):
-            DiscordWebhook(url=webhook, content='@everyone Failed download episode {}-E{}!'.format(self.name, episode)).execute()
+                if not os.path.exists(filename):
+                    logging.info("Downloading %s", filename)
+                    ytdl_options_video = {"quiet": True,
+                                          "cachedir": False,
+                                          "outtmpl": filename}
+                    if self.type == "playlist":
+                        ytdl_options_video["playlist_items"] = str(episode)
+                        download_url = "https://www.youtube.com/playlist?list={}".format(self.id)
+                    elif self.type == "video":
+                        download_url = "https://www.youtube.com/watch?v={}".format(self.id)
+                    if extension == "v":
+                        ytdl_options_video["format"] = str(self.videoid)
+                    elif extension == "a":
+                        ytdl_options_video["format"] = str(self.audioid)
+                    ytdl = youtube_dl.YoutubeDL(ytdl_options_video)
+                    ytdl.download([download_url])
+            if not media_files_exist(media_directory, self.name, episode):
+                DiscordWebhook(url=webhook, content='@everyone Failed download episode {}-E{}!'.format(self.name, episode)).execute()
+        except OSError as err:
+            logging.error("Could not remove %s.part: %s", filename, err)
 
 class Stream:
     '''
@@ -182,22 +181,22 @@ class Stream:
         ffmpeg_opts         [dict] Dictionary of ffmpeg options used
         webhook             [str] Discord webhook for notifications
         '''
-        overlay_input = ffmpeg.input(overlay)\
-                               .filter("ass",
-                                       filename=ffmpeg_opts['subtitles']['final'])
-        video = ffmpeg.input("{}{}-E{}.v".format(media_directory, self.media.name, self.episode), re=None)\
-                      .video\
-                      .filter("scale",
-                              ffmpeg_opts['viewportwidth'],
-                              ffmpeg_opts['viewportheight'])\
-                      .filter("pad",
-                              ffmpeg_opts['resolutionwidth'],
-                              ffmpeg_opts['resolutionheight'],
-                              ffmpeg_opts['viewportx'],
-                              ffmpeg_opts['viewporty'])\
-                      .overlay(overlay_input)
-        audio = ffmpeg.input("{}{}-E{}.a".format(media_directory, self.media.name, self.episode), re=None)
         try:
+            overlay_input = ffmpeg.input(overlay)\
+                                   .filter("ass",
+                                           filename=ffmpeg_opts['subtitles']['final'])
+            video = ffmpeg.input("{}{}-E{}.v".format(media_directory, self.media.name, self.episode), re=None)\
+                          .video\
+                          .filter("scale",
+                                  ffmpeg_opts['viewportwidth'],
+                                  ffmpeg_opts['viewportheight'])\
+                          .filter("pad",
+                                  ffmpeg_opts['resolutionwidth'],
+                                  ffmpeg_opts['resolutionheight'],
+                                  ffmpeg_opts['viewportx'],
+                                  ffmpeg_opts['viewporty'])\
+                          .overlay(overlay_input)
+            audio = ffmpeg.input("{}{}-E{}.a".format(media_directory, self.media.name, self.episode), re=None)
             logging.info("Starting episode %s-E%s", self.media.name, self.episode)
             ffmpeg.output(video,
                           audio,
@@ -374,17 +373,10 @@ def kill_process(parent_pid):
         child.kill()
     parent.kill()
 
-def stop_zanarkand(signum, frame):
-    '''
-    Handle the child processes when the container/process gets a STOP signal
-    '''
-    kill_process(os.getpid())
-
 def main():
     '''
     main
     '''
-    signal(SIGTERM, stop_zanarkand)
     parser = ArgumentParser()
     parser.add_argument("-c", "--config", help="Main configuration file location", default="/opt/zanarkand/config.yml")
     parser.add_argument("-d", "--debug", help="Enabled debug mode", action="store_true")
@@ -399,7 +391,7 @@ def main():
             sys_exit(1)
 
     #Check mandatory options:
-    for mandatory in ["youtube_key", "mediadirectory", "standbydirectory", "order", "sections", "discordwebhook"]:
+    for mandatory in ["mediadirectory", "standbydirectory", "order", "sections", "discordwebhook"]:
         if mandatory not in config:
             print("Mandatory option {} is not in the config file {}".format(mandatory, args.config))
             logging.error("Mandatory option %s is not in the config file %s", mandatory, args.config)
@@ -429,7 +421,12 @@ def main():
     #Other settings
     webhook = config.get("discordwebhook")
     number_of_downloads = config.get("numberofdownloads", 3)
-    config["ffmpeg"]["filename"] = "rtmp://a.rtmp.youtube.com/live2/{}".format(config["youtube_key"])
+
+    # Set youtube stream
+    if "YOUTUBE_KEY" not in os.environ:
+        logging.error("YOUTUBE_KEY is not set!")
+        sys.exit(2)
+    config["ffmpeg"]["filename"] = "rtmp://a.rtmp.youtube.com/live2/{}".format(os.getenv("YOUTUBE_KEY"))
 
     # Create Media dictionary
     media_dictionary = {}
@@ -479,13 +476,13 @@ def main():
 
         # Update status
         current_status = {'game': stream.media.name,
-                          'position': stream.position,
-                          'episode': stream.episode,
-                          'loop': stream.loop}
+                        'position': stream.position,
+                        'episode': stream.episode,
+                        'loop': stream.loop}
         with open(status_yaml, 'w') as write_status:
             safe_dump(current_status,
-                      write_status,
-                      default_flow_style=False)
+                    write_status,
+                    default_flow_style=False)
 
         # Delete previous episodes
         if previous_media:
