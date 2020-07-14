@@ -10,7 +10,7 @@
      mkdir $(pwd)/resources
  fi
 
-youtube-dl https://www.youtube.com/watch?v=NhcsKAUBLb0 -o "$(pwd)/standby/standby.%(ext)s"
+youtube-dl https://www.youtube.com/watch?v=QtYienBNUAs -o "$(pwd)/standby/standby.%(ext)s"
 youtube-dl --playlist-items 135 https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps -o "$(pwd)/standby/%(title)s"
 youtube-dl --playlist-items 136 https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps -o "$(pwd)/standby/%(title)s"
 youtube-dl --playlist-items 137 https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps -o "$(pwd)/standby/%(title)s"
