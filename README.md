@@ -8,24 +8,78 @@ Welcome to the stream that never sleeps! This software is essentially a Remake/R
 After Berk and I have debugged some of the issues that we had to deal with, we had a good general idea of what the software was doing. So this code _doesn't_ perform everything the same way Topher's program executed things, but the end result is the same along with some updates.
 
 ## Components
-There are three main pieces of software that this program uses that are essential for the stream:
+There are four main pieces of software that this program uses that are essential for the stream:
 1. [ffmpeg](https://www.ffmpeg.org/) - "A complete, cross-platform solution to record, convert and stream audio and video."
 2. [youtube-dl](https://ytdl-org.github.io/youtube-dl/index.html) - "A command-line program to download videos from YouTube.com"
 3. zanarkand.py - The software I wrote that brings everything together.
 4. [docker](https://www.docker.com/resources/what-container) - Software bundling
 
+## Starting from scratch
+So you decided you want to use this software, eh? Well props to you, I think! Here's what you need to do in order for things to get running. This is all assuming you have some version of Ubuntu installed (probably `18.04` or later) and have access to the command line for the server; either through the desktop and bringing up a **Terminal** application or connecting through SSH. All commands also assume you're **NOT** root. You shouldn't be logging in as root directly anyway. If you logged in as `root` and need to make a user, issue the following command
+```
+useradd <username>
+passwd <username>
+(Enter in password for the new user)
+```
+Then log out as root and re-log in as the new user. 
+
+### Getting the software
+First think you need to do is install `git` so you can clone this software locally onto the server. You can do this with the following command:
+```console
+$ sudo apt install -y git
+```
+Assuming you have a github account to access this repo, you need to connect your account to your user account on the Ubuntu server to your github account.
+First, run a command to generate **SSH Keys**:
+```console
+$ ssh-keygen
+```
+You can just keep hitting enter to use the default values. Once that is completed, obtain your **public SSH key**:
+```console
+$ cat ~/.ssh/id_rsa.pub
+```
+Once you have that value, log into github via a web browser. Click on your user icon in the top right and select **Settings**. Select **SSH and GPG Keys** on the left side, then **Add SSH Key** up top of the new window. Add whatever you want to title the new key, and paste in the contents of the command before.
+
+Now you can clone the github repository on the new server.
+```console
+$ cd
+$ git clone git@github.com:rehldeal6/SpiraUnplugged.git zanarkand
+```
+This will create a new folder in your home directory called `zanarkand` with the contents of this github repository. 
+
+### Installing Docker
+Docker is needed in order to run the zanarkand software. It makes it extremely easy to run the software. Instead of installing dependencies, making sure different software versions are compatible with each other, etc, docker just runs an "image" as a "container". The image we will run will include all of the necessary software needed to run the stream. A container is a running instance of an image. It's a little confusing, but you don't really need to know the nitty-gritty.
+Rather than repeating lots of the same instructions, just follow [these steps](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) to install Docker on Ubuntu. Your architecture will most likely be **x86_64/amd64**. 
+Once the software is installed, add your username to the **docker** group.
+```console
+$ sudo usermod -aG docker <your username>
+```
+
+### Installing Docker-Compose
+One last thing needed is an additional piece of software for Docker called **docker-compose**. This makes controlling the container much simpler. 
+[This link](https://docs.docker.com/compose/install/#install-compose-on-linux-systems) contains the commands to install docker-compose on the server.
+
+### Obtaining required videos
+There is one last thing to do in order for the stream to work: you need to download the additional videos that will stay local (for when the stream goes into standby mode).
+This can be accomplished by performing the following commands:
+```console
+cd ~/zanarkand
+docker container run --v $(pwd):/opt/zanarkand --entrypoint /opt/zanarkand/setup.sh 
+```
+This will take quite some time for the downloads the complete. 
+Once you have this completed, that's it! You now have all of the necessary peices for running the stream. To get started with running the stream, go to [Controlling the stream](#controlling-the-stream)
+
 ## Folder Structure and File Information
 The main bulk of the code and files are stored on the server in the `/opt/zanarkand/` directory. From there, there are specific and important directories that need to exist:
 ```console
-/opt/zanarkand/
-               config.yml
-               current_status.yml
-               zanarkand.py
-               media/
-               resources/
-               standby/
-               setup.py
-               setup.sh
+zanarkand/
+          config.yml
+          current_status.yml
+          zanarkand.py
+          media/
+          resources/
+          standby/
+          setup.py
+          setup.sh
 ```
 * `config.yml` - Contains all of the stream configuration. Options should hopefully be self explanatory, and should really only be updated if there's a new playlist or video to add, or if the stream quality needs to go up/down.
 * `current_status.yml` - Contains the information about the current video being played. Used when the stream software is restarted so it knows where to pick up from.
@@ -68,36 +122,35 @@ The standby videos directory is specified in `config.yml` with the `standbydirec
 ** PLEASE NOTE ** - When downloading a standby video, please make sure to add the `--output /opt/zanarkand/standby/%(title)s` option to the command. This will make sure the downloaded video will have the proper name.
 
 ### Changing the currently streaming video to play another video
-In `config.yml` there is an option called `current_status` that points to the file that handles the currently streaming video. It's probably in `/opt/zanarkand/current_status.yml`. It should look something like this (this is the very first video of the stream):
-```
+Update `current_status.yml` to look like the following format:
+```yaml
 game: FFVII
 episode: 2
 loop: 1
 position: 1
 ```
 The order of the options may be different. The two options worth noting are `game` and `position`. The `game` option **has to match the game listed under `sections` in `config.yml`**. The `position` option refers to the order position we are in the stream. **FFVII** is the first game listed under `order` in `config.yml`, so it's listed as `position: 1`. This helps if there are any duplicate entries in `order`, like **FFX**. So if we were to update this file to play FFX after FFIX, episode 20, loop 1, we would make the following update:
-```
+```yaml
 game: FFX
 episode: 20
 loop: 1
-position: 6
+position: 8
 ```
-since that specific instance of **FFX** is the **6th** entry under `order`. Once the update to the current status file has been made, [restart the stream](#restart-the-stream).
+since that specific instance of **FFX** is the **8th** entry under `order`. Once the update to the current status file has been made, [restart the stream](#restart-the-stream).
 
-## Controlling the stream - Docker
-The stream is being run by the `docker` software. `Docker` uses the [zanarkand docker image](https://hub.docker.com/repository/docker/rehldeal/zanarkand) (account required) and puts it in a "container". This image contains all of the required software that is needed in order to run the stream. In order to run the following commands, your user account needs to be in the `docker` group on the server. If your user is not in the group, run the command `sudo usermod -aG docker <your username>`.
+## Controlling the stream
+The stream is being run by the `docker` software. `Docker` uses the [zanarkand docker image](https://hub.docker.com/repository/docker/rehldeal/zanarkand) (account required) and puts it in a "container". This image contains all of the required software that is needed in order to run the stream. The docker image will only be updated in a developement environment, and the production server will either rebuild the image locally or pull from the internet. In order to run the following commands, your user account needs to be in the `docker` group on the server. If your user is not in the group, run the command `sudo usermod -aG docker <your username>`.
 
 ### Before creating the docker container
-Before you create the docker container, there needs to be a directory on the server that looks like the [Folder Structure and File Information](https://github.com/rehldeal6/SpiraUnplugged/blob/master/README.md#folder-structure-and-file-information) section (probably in `/opt/zanarkand/` on the server). This is so the container can use that directory to run properly. Ensure all of the settings in `config.yml` are correct (especially `youtube_key`). The `setup.sh` script is used to create all of the needed directories and videos and is mapped to the `/opt/zanarkand` directory inside the image (see the `-v` flag in the command below)
+Make sure you follow the steps listed in [Starting from scratch](#starting-from-scratch). Once that is set up, make sure your youtube key is correct in `docker-compose.override.yml` in the line saying `- YOUTUBE_KEY=<key>`. 
 
-### Create the Docker container
-To create the container, run this command:
+### Note for developers
+**Note**: If you are setting this up in a development environment, make sure you include the arguments `-f docker-compose.yml` and `-f docker-compose.dev.yml` in all of these commands below. This will ensure that you use the correct development environments. 
+For example, to start the stream:
 ```console
-docker container run --name zanarkand -v /opt/zanarkand/:/opt/zanarkand/ rehldeal/zanarkand:<version number>
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
-The first `/opt/zanarkand/` (the part before the `:`) is the local directory that will be mapped to the `/opt/zanarkand` directory in the image. This can be changed to where the files are located on the local server.
-
-To get the version numbers, consult the [zanarkand docker image](https://hub.docker.com/repository/docker/rehldeal/zanarkand) page. Once this command is run, the 
+**Note #2**: Also make sure your `YOUTUBE_KEY` variable is set correctly in `docker-compose.dev.yml`. 
 
 ### Start the stream
 ```console
@@ -127,7 +180,6 @@ or, if you want a live feed of the logs
 ```console
 docker container logs -f zanarkand
 ```
-
 
 ## Helpful commands
 ### Using Youtube-DL
@@ -208,9 +260,12 @@ youtube-dl --format 140 --output /opt/zanarkand/media/FFX-E10.a https://www.yout
 This part of the README is designed to grow as we come across problems related to this software. We should document any fixes to the stream here.
 
 ### Youtube-dl needs updating
-The most common issue that we come across is that youtube-dl needs updating. When this happens, the stream fails to download the upcoming episodes. The tech-support discord channel should be notified when this occues and the stream _should_ try to automatically update. If this still fails, the container image needs to be rebuilt, published, and updated on the server. To view the current version number, visit the [zanarkand docker image page](https://hub.docker.com/repository/docker/rehldeal/zanarkand) (account required).
+The most common issue that we come across is that youtube-dl needs updating. When this happens, the stream fails to download the upcoming episodes. The tech-support discord channel should be notified when this occues and the stream _should_ try to automatically update. If this still fails, the container image needs to be rebuilt. These commands will stop the stream, rebuild the image, and start it back up.
+
 ```console
-docker-compose up --build --force-recreate -d
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
 ```
 docker 
 
