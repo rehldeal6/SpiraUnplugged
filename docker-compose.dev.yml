@@ -4,6 +4,8 @@ services:
   zanarkand:
     environment:
       - YOUTUBE_KEY=32vs-4k2f-wrjz-epcs
+      - MAX_DOWNLOAD_ATTEMPTS=2
+        #command: " -d"
+    restart: "no"
     volumes:
-      - ./zanarkand.py:/zanarkand.py
-    entrypoint: /zanarkand.py
+        - ./zanarkand/zanarkand.py:/zanarkand/zanarkand.py
