@@ -71,7 +71,7 @@ class Stream:
                 logging.error("Mandatory option %s is not in the config file", mandatory)
 
         # Get current status
-        with open("/resources/current_status.yml", 'r') as input_status:
+        with open("/resources/status.yml", 'r') as input_status:
             try:
                 status = safe_load(input_status)
             except YAMLError as yerr:
