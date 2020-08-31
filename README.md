@@ -7,6 +7,8 @@ Welcome to the stream that never sleeps! This software is essentially a Remake/R
 3. Berk had a few new ideas and upgrades for the stream. If we wanted to incorporate these changes, we pretty much had to re-write the software.
 After Berk and I have debugged some of the issues that we had to deal with, we had a good general idea of what the software was doing. So this code _doesn't_ perform everything the same way Topher's program executed things, but the end result is the same along with some updates.
 
+***NOTE:*** Most, if not all, of these commands assumes you are in the directory containing this github repository.
+
 ## Components
 There are four main pieces of software that this program uses that are essential for the stream:
 1. [ffmpeg](https://www.ffmpeg.org/) - "A complete, cross-platform solution to record, convert and stream audio and video."
@@ -39,6 +41,13 @@ $ cat ~/.ssh/id_rsa.pub
 ```
 Once you have that value, log into github via a web browser. Click on your user icon in the top right and select **Settings**. Select **SSH and GPG Keys** on the left side, then **Add SSH Key** up top of the new window. Add whatever you want to title the new key, and paste in the contents of the command before.
 
+There's one more small step to perform on the linux side to be able to use git:
+```console
+$ git config --global user.name "John Doe"
+$ git config --global user.email johndoe@example.com
+```
+Just rpelace your name and email with your values (could be fake values, idc).
+
 Now you can clone the github repository on the new server.
 ```console
 $ cd
@@ -47,7 +56,7 @@ $ git clone git@github.com:rehldeal6/SpiraUnplugged.git zanarkand
 This will create a new folder in your home directory called `zanarkand` with the contents of this github repository. 
 
 ### Installing Docker
-Docker is needed in order to run the zanarkand software. It makes it extremely easy to run the software. Instead of installing dependencies, making sure different software versions are compatible with each other, etc, docker just runs an "image" as a "container". The image we will run will include all of the necessary software needed to run the stream. A container is a running instance of an image. It's a little confusing, but you don't really need to know the nitty-gritty.
+Docker is needed in order to run the zanarkand software. It makes it extremely easy to run everything. Instead of installing dependencies, making sure different software versions are compatible with each other, etc, docker just runs an "image" as a "container". The image we will run will include all of the necessary software needed to run the stream. A container is a running instance of an image. It's a little confusing, but you don't really need to know the nitty-gritty.
 Rather than repeating lots of the same instructions, just follow [these steps](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) to install Docker on Ubuntu. Your architecture will most likely be **x86_64/amd64**. 
 Once the software is installed, add your username to the **docker** group.
 ```console
@@ -59,68 +68,84 @@ This will require you to log out of the server and re-log in.
 One last thing needed is an additional piece of software for Docker called **docker-compose**. This makes controlling the container much simpler. 
 [This link](https://docs.docker.com/compose/install/#install-compose-on-linux-systems) contains the commands to install docker-compose on the server.
 
-### Obtaining required videos
-There is one last thing to do in order for the stream to work: you need to download the additional videos that will stay local (for when the stream goes into standby mode).
-This can be accomplished by performing the following commands:
-```console
-$ cd ~/zanarkand
-$ docker-compose build --no-cache
-(this will take some time)
-$ docker container run -v $(pwd):/opt/zanarkand -w /opt/zanarkand --entrypoint sh rehldeal/zanarkand:latest /opt/zanarkand/setup.sh
+### Setting up
+I made a script that should create everything needed to run the stream. There is a file called `setup.sh` located where you pulled the git repository.
+```
+./setup.sh
 ```
 This will take quite some time for the downloads the complete. 
 Once you have this completed, that's it! You now have all of the necessary peices for running the stream. To get started with running the stream, go to [Controlling the stream](#controlling-the-stream)
 
-## Folder Structure and File Information
+### Folder Structure and File Information
 The main bulk of the code and files are stored on the server in the `/opt/zanarkand/` directory. From there, there are specific and important directories that need to exist:
 ```console
 zanarkand/
-          config.yml
-          current_status.yml
-          zanarkand.py
-          media/
+          ffmpeg/
+          ytdl/
+          zanarkand/
           resources/
+          media/
           standby/
-          setup.py
+          docker-compose.yml
+          docker-compose.override.yml
+          docker-compose.dev.yml
           setup.sh
 ```
-* `config.yml` - Contains all of the stream configuration. Options should hopefully be self explanatory, and should really only be updated if there's a new playlist or video to add, or if the stream quality needs to go up/down.
-* `current_status.yml` - Contains the information about the current video being played. Used when the stream software is restarted so it knows where to pick up from.
-* `zanarkand.py` - The main piece of software.
+* `ffmpeg/` - Directory containing everything needed to build the `ffmpeg` image. This image is used to stream the downloaded media to youtube
+* `ytdl/` - Directory containing everything needed to build the `ytdl` image. This image is used to download videos from youtube
+* `zanarkand/` - Directory containing everything needed to build the `zanarkand` image. This is the scheduler that controls the `ffmpeg` and `ytdl` images. 
 * `media/` - Directory containing the audio and video files of the youtube videos
-* `resources/` - Directory containing additional resources needed for the stream (overlay image, subtitles, etc.)
+* `resources/` - Directory containing additional resources needed for the stream (configs, overlay image, subtitles, etc.)
 * `standby/` - Directory containing the pre-downlowned videos used for standby
 
-There are also some files not needed for the software to _run_, but for setup functions:
-* `Dockerfile` - Used to create the docker image to bundle the software together
-* `setup.py` - Used by the Dockerfile to install the zanarkand software in the image
-* `setup.sh` - A small script that is run on a new server so that the proper directories and videos are downloaded
+Required files in `resources`:
+***NOTE*** If these files do not exist, the stream will fail to run!
+* `config.yml` - Contains the order of videos to play along with information about each video
+* `status.yml` - Contains information about the current video playing. When the stream starts, this is where it knows where to start off
+* `template.ass` - Template subtitle file. 
+* `standby.flv` - Pre-downloaded initial standby video.
+* `overlay.png` - Overlay image
+
+### Building the images
+Three images are used within this software: `zanarkand`, `ffmpeg`, and `ytdl`. The folders with the same names are used to create the images. All three need to be created in order for anything to work. To create these images:
+1. start within the directory pulled from github.
+2. Go inside the directory of the image
+```
+cd ffmpeg/
+```
+3. Use this command to build the image and tag it with a name
+```
+docker image build -t ffmpeg . --no-cache
+```
+4. (Optional) Go up a directory so you can navigate to the other folders (`ytdl`, `zanarkand`)
+```
+cd ..
+```
 
 ## Common Tasks
-
 ### Changing the overlay
-The overlay file is configued in `config.yml` associated with the **overlay** keyword. So for example, in this repository, **overlay** is configured to be `/opt/zanarkand/resources/1080overlay.png`. In order to make an update to that file, one needs to copy the file off the server, make the update, and put the file back onto the server in the correct location. A common program that can be used to transfer the file on or off the server is [WinSCP](https://winscp.net/eng/index.php). Once you enter in the server IP address and proper credentials, you can navigate to the file and transfer it to/from desktop. Once the overlay file has been updated, it will be applied to the next video in the stream.
+The overlay file is hardcoded to be `resources/overlay.png`. In order to make an update to that file, one needs to copy the file off the server, make the update, and put the file back onto the server in the correct location. A common program that can be used to transfer the file on or off the server is [WinSCP](https://winscp.net/eng/index.php). Once you enter in the server IP address and proper credentials, you can navigate to the file and transfer it to/from desktop. Once the overlay file has been updated, it will be applied to the next video in the stream.
 
 ### Changing the stream quality
-The stream quality is configured in `config.yml` under the `ffmpeg` section. The most commong setting to change is the `preset` option. The `crf`, `groupofpictures` and some of the bitrate options are also configurable to the quality of the stream. [This ffmpeg link](https://trac.ffmpeg.org/wiki/Encode/H.264) shows the different values that can be used.
+The `ffmpeg` software can be tweaked to change the quality of the streaming video. The options with their default values are defined in `docker-compose.yml`. They can be either changed in that file or overridden in `docker-compose.override.yml` by adding the entry under `environment` (like how it is in `docker-compose.yml`). The most commong setting to change is the `preset` option. The `crf`, `groupofpictures` and some of the bitrate options are also configurable to the quality of the stream. [This ffmpeg link](https://trac.ffmpeg.org/wiki/Encode/H.264) shows the different values that can be used.
 
 Another way to change the stream quality is to update the `videoformatid` and `audioformatid` options under `sections` section in `config.yml`. Each video or playlist has an option to specify the video or audio quality. Check out [this section](#view-all-of-the-formats-available-for-a-video) on how to option the types of video and audio formats available for each video or playlist.
 
-If you update `config.yml` at all, you need to [restart the stream](#restart-the-stream).
+If any of these values are updated, you need to [restart the stream](#restart-the-stream-controller).
 
 ### Change the stream schedule
-The stream schedule is configured under the `order` section of `config.yml`. Update the value as needed, but make sure that each entry in `order` **matches up with an entry under `sections`**. If there is something in `order` that does NOT match up with an entry in `sections`, the stream will not be able to start properly.
+The stream schedule is configured under the `order` section of `resources/config.yml`. Update the value as needed, but make sure that each entry in `order` **matches up with an entry under `sections`**. If there is something in `order` that does NOT match up with an entry in `sections`, the stream will not be able to start properly.
 
-Once the update to the order has been made, [restart the stream](#restart-the-stream).
+Once the update to the order has been made, [restart the stream](#restart-the-stream-controller).
 
 ### Changing the standby text
-I should really make the standby text configurable, but for now it's hardcoded into the stream software. To update the text, one needs to edit the stream software file (`zanarkand.py`) which is located in `/opt/zanarkand/zanarkand.py`. The text is hardcoded on line #247. After the update has been made, save the file. Then, [restart the stream](#restart-the-stream).
+I should really make the standby text configurable, but for now it's hardcoded into the stream software. To update the text, one needs to edit the stream software file (`zanarkand.py`) which is located in `ffmpeg/zanarkand_ffmpeg.py`. After the update has been made, save the file. Then, [rebuild the image](#building-the-images).
 
 ### Checking if youtube-dl is up to date
 See [Youtube-dl needs updating](#youtube-dl-needs-updating).
 
 ### Adding or changing videos that will play during standby
-The standby videos directory is specified in `config.yml` with the `standbydirectory` option. For example, in this repository, it's located at `/opt/zanarkand/standby/`. It contains pre-downloaded videos to play during an extended outage. The streaming software will randomly pick one of these videos in that directory to play during the downtime. To remove a video from being shown during standby, simply delete the video. To add a video to the directory, see [Downloading using a playlist](#downloading-using-a-playlist) or 
+The list of standby videos are in `standby/`. These videos will be played after a set number of download attempts fail to download a video. The streaming software will randomly pick one of these videos in that directory to play during the downtime. To remove a video from being shown during standby, simply delete the video. To add a video to the directory, see [Downloading using a playlist](#downloading-using-a-playlist) or 
 [Downloading a specific video](#downloading-a-specific-video). 
 ** PLEASE NOTE ** - When downloading a standby video, please make sure to add the `--output /opt/zanarkand/standby/%(title)s` option to the command. This will make sure the downloaded video will have the proper name.
 
@@ -142,9 +167,35 @@ position: 8
 since that specific instance of **FFX** is the **8th** entry under `order`. Once the update to the current status file has been made, [restart the stream](#restart-the-stream).
 
 ## Controlling the stream
-The stream is being run by the `docker` software. `Docker` uses the [zanarkand docker image](https://hub.docker.com/repository/docker/rehldeal/zanarkand) (account required) and puts it in a "container". This image contains all of the required software that is needed in order to run the stream. The docker image will only be updated in a developement environment, and the production server will either rebuild the image locally or pull from the internet. In order to run the following commands, your user account needs to be in the `docker` group on the server. If your user is not in the group, run the command `sudo usermod -aG docker <your username>`.
+The stream is being run by the `docker` software. Docker uses the images defined in this github repository. This images contains all of the required software that is needed in order to run the stream. The docker images will only be updated in a developement environment, and the production server will rebuild the image locally. In order to run the following commands, your user account needs to be in the `docker` group on the server. If your user is not in the group, run the command `sudo usermod -aG docker <your username>`.
 
-### Before creating the docker container
+### Container overview
+There are multiple images that get run out of this software: `zanarkand`, `ffmpeg`, and `ytdl`:
+* `zanarkand` - schedules which video to stream and download
+* `ffmpeg` - performs the actual streaming of a video
+* `ytdl` - downloads videos from youtube.
+
+The `docker-compose` commands below _ONLY_ control the `zanarkand` container by design. This helps the stream to continue to run even if we make updates to the schedule or code. If you view all of the containers running during the stream, you'll see multiple containers running at once. There are a few that get automatically generated:
+* `zanarkand` - the main container that does the scheduling
+* `ffmpeg_initial_standby` - a `ffmpeg` container that's configured specifically to run the initial standby video
+* `ffmpeg_longer_standby` - a `ffmpeg` container that's configured specifically to run the longer standby videos
+
+There are other containers that get automatically created and deleted as needed:
+* `ffmpeg_<game>_E<episode>` - a `ffmpeg` container that's running the current episode
+* `ffmpeg_<next game>_E<next episode>` - a stopped `ffmpeg` container that is ready to run the next episode
+* `ytdl_<game>_E<episode>` - a `ytdl` container that's downloading a particular episode
+
+The `ytdl` containers are not always listed, because the software is not always downloading episodes; it's created when needed (like at the start of each episode). 
+
+If you want to specifically stop a container from running, say you want to stop the current episode from being played, there's an easy command to do it:
+```
+docker container stop <container name>
+```
+This will stop any container listed. Most containers are configured to be deleted after they've stopped, except for the main `zanarkand` container and the `ffmpeg_initial/longer_standby` containers.
+
+STARTING a container is much more difficult, and it's best to let the zanarkand program to do all the work needed. It you want to START a container, change the values in `resources/status.yml` and set it to the desired episode.
+
+### Before creating the docker containers
 Make sure you follow the steps listed in [Starting from scratch](#starting-from-scratch). Once that is set up, make sure your youtube key is correct in `docker-compose.override.yml` in the line saying `- YOUTUBE_KEY=<key>`. 
 
 ### Note for developers
@@ -155,7 +206,8 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 **Note #2**: Also make sure your `YOUTUBE_KEY` variable is set correctly in `docker-compose.dev.yml`. 
 
-### Start the stream
+### Start the stream controller
+**NOTE** This command needs to be run WITHIN the stream software directory
 ```console
 docker-compose up -d
 ```
@@ -165,17 +217,19 @@ docker-compose run zanarkand -d
 ```
 To run it (not in detached mode) in debug mode (for development reasons)
 
-### Stop the stream
+### Stop the stream controller
+**NOTE** This command needs to be run WITHIN the stream software directory
 ```console
 docker-compose stop
 ```
 
-### Restart the stream
+### Restart the stream controller
+**NOTE** This command needs to be run WITHIN the stream software directory
 ```console
 docker-compose restart
 ```
 
-### View the stream logs
+### View the stream controller logs
 ```console
 docker container logs zanarkand
 ```
@@ -186,7 +240,7 @@ docker container logs -f zanarkand
 
 ## Helpful commands
 ### Using Youtube-DL
-The stream looks for videos in the `/opt/zanarkand/media/` folder (or whatever is configured for `mediadirectory` in `config.yml`). It looks for these videos in a specific format:
+The stream looks for videos in the `media/` folder. It looks for these videos in a specific format:
 ```
 <game-name>-E<episode-number>.v
 <game-name>-E<episode-number>.a
@@ -199,35 +253,37 @@ Intermission-E1.a
 If you need to download a specific video, here's what you can do:
 
 #### Downloading using a playlist
+The use of docker containers made it a bit longer command to run, but since this is rarely used it's fine. This command also needs to be run within the github repository directory.
 ```console
-youtube-dl --playlist-items <episode number> --format bestvideo --output /opt/zanarkand/media/<game-name>-E<episode-number>.v <playlist URL>
-youtube-dl --playlist-items <episode number> --format bestaudio --output /opt/zanarkand/media/<game-name>-E<episode-number>.a <playlist URL>
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --playlist-items <episode-number> --format bestvideo --output "/media/<game-name>-E<episode-number>.v <playlist URL>"
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --playlist-items <episode-number> --format bestaudio --output "/media/<game-name>-E<episode-number>.a <playlist URL>"
 ```
 Example command to download Episode 10 of the FFX playlist in the format the stream needs:
 ```console
-youtube-dl --playlist-items 10 --format bestvideo --output /opt/zanarkand/media/FFX-E10.v https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps
-youtube-dl --playlist-items 10 --format bestaudio --output /opt/zanarkand/media/FFX-E10.a https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --playlist-items 10 --format bestvideo --output "/media/FFX-E10.v https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps"
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --playlist-items 10 --format bestaudio --output "/media/FFX-E10.a https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps"
 ```
 
 #### Downloading a specific video
+The use of docker containers made it a bit longer command to run, but since this is rarely used it's fine. This command also needs to be run within the github repository directory.
 ```console
-youtube-dl --format bestvideo --output /opt/zanarkand/media/<game-name>-E<episode-number>.v <video URL>
-youtube-dl --format bestaudio --output /opt/zanarkand/media/<game-name>-E<episode-number>.a <video URL>
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestvideo --output /opt/zanarkand/media/<game-name>-E<episode-number>.v <video URL>"
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestaudio --output /opt/zanarkand/media/<game-name>-E<episode-number>.a <video URL>"
 ```
 Example command to download Episode 10 of the FFX playlist in the format the stream needs:
 ```console
-youtube-dl --format bestvideo --output /opt/zanarkand/media/FFX-E10.v https://www.youtube.com/watch?v=xoLBwYgcsbk
-youtube-dl --format bestaudio --output /opt/zanarkand/media/FFX-E10.a https://www.youtube.com/watch?v=xoLBwYgcsbk
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestvideo --output /media/FFX-E10.v https://www.youtube.com/watch?v=xoLBwYgcsbk"
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestaudio --output /media/FFX-E10.a https://www.youtube.com/watch?v=xoLBwYgcsbk"
 ```
 
 #### View all of the formats available for a video
 Youtube uses its own specific video format IDs to use for the `--format` option. To view the formats available for a video, run the following command:
 ```console
-youtube-dl -F <youtube URL>
+docker run --rm --entrypoint youtube-dl ytdl -F <video URL>
 ```
 Example:
 ```console
-youtube-dl -F https://www.youtube.com/watch?v=xoLBwYgcsbk
+docker run --rm --entrypoint youtube-dl ytdl -F https://www.youtube.com/watch?v=xoLBwYgcsbk
 [youtube] xoLBwYgcsbk: Downloading webpage
 [youtube] xoLBwYgcsbk: Downloading video info webpage
 [info] Available formats for xoLBwYgcsbk:
@@ -255,8 +311,8 @@ format code  extension  resolution note
 So if we wanted to download a `1920x1080` mp4 video (format code `137`)  and the `m4a` audio (format code `140`), you would do the following (using FFX-E10 as an example):
 
 ```console
-youtube-dl --format 137 --output /opt/zanarkand/media/FFX-E10.v https://www.youtube.com/watch?v=xoLBwYgcsbk
-youtube-dl --format 140 --output /opt/zanarkand/media/FFX-E10.a https://www.youtube.com/watch?v=xoLBwYgcsbk
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format 137 --output /media/FFX-E10.v https://www.youtube.com/watch?v=xoLBwYgcsbk
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format 140 --output /media/FFX-E10.a https://www.youtube.com/watch?v=xoLBwYgcsbk
 ```
 
 ## Debugging the stream
