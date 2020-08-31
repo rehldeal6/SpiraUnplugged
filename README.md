@@ -70,7 +70,7 @@ One last thing needed is an additional piece of software for Docker called **doc
 
 ### Setting up
 I made a script that should create everything needed to run the stream. There is a file called `setup.sh` located where you pulled the git repository.
-```
+```console
 ./setup.sh
 ```
 This will take quite some time for the downloads the complete. 
@@ -78,7 +78,7 @@ Once you have this completed, that's it! You now have all of the necessary peice
 
 ### Folder Structure and File Information
 The main bulk of the code and files are stored on the server in the `/opt/zanarkand/` directory. From there, there are specific and important directories that need to exist:
-```console
+```
 zanarkand/
           ffmpeg/
           ytdl/
@@ -110,61 +110,17 @@ Required files in `resources`:
 Three images are used within this software: `zanarkand`, `ffmpeg`, and `ytdl`. The folders with the same names are used to create the images. All three need to be created in order for anything to work. To create these images:
 1. start within the directory pulled from github.
 2. Go inside the directory of the image
-```
-cd ffmpeg/
+```console
+$ cd ffmpeg/
 ```
 3. Use this command to build the image and tag it with a name
-```
-docker image build -t ffmpeg . --no-cache
+```console
+$ docker image build -t ffmpeg . --no-cache
 ```
 4. (Optional) Go up a directory so you can navigate to the other folders (`ytdl`, `zanarkand`)
+```console
+$ cd ..
 ```
-cd ..
-```
-
-## Common Tasks
-### Changing the overlay
-The overlay file is hardcoded to be `resources/overlay.png`. In order to make an update to that file, one needs to copy the file off the server, make the update, and put the file back onto the server in the correct location. A common program that can be used to transfer the file on or off the server is [WinSCP](https://winscp.net/eng/index.php). Once you enter in the server IP address and proper credentials, you can navigate to the file and transfer it to/from desktop. Once the overlay file has been updated, it will be applied to the next video in the stream.
-
-### Changing the stream quality
-The `ffmpeg` software can be tweaked to change the quality of the streaming video. The options with their default values are defined in `docker-compose.yml`. They can be either changed in that file or overridden in `docker-compose.override.yml` by adding the entry under `environment` (like how it is in `docker-compose.yml`). The most commong setting to change is the `preset` option. The `crf`, `groupofpictures` and some of the bitrate options are also configurable to the quality of the stream. [This ffmpeg link](https://trac.ffmpeg.org/wiki/Encode/H.264) shows the different values that can be used.
-
-Another way to change the stream quality is to update the `videoformatid` and `audioformatid` options under `sections` section in `config.yml`. Each video or playlist has an option to specify the video or audio quality. Check out [this section](#view-all-of-the-formats-available-for-a-video) on how to option the types of video and audio formats available for each video or playlist.
-
-If any of these values are updated, you need to [restart the stream](#restart-the-stream-controller).
-
-### Change the stream schedule
-The stream schedule is configured under the `order` section of `resources/config.yml`. Update the value as needed, but make sure that each entry in `order` **matches up with an entry under `sections`**. If there is something in `order` that does NOT match up with an entry in `sections`, the stream will not be able to start properly.
-
-Once the update to the order has been made, [restart the stream](#restart-the-stream-controller).
-
-### Changing the standby text
-I should really make the standby text configurable, but for now it's hardcoded into the stream software. To update the text, one needs to edit the stream software file (`zanarkand.py`) which is located in `ffmpeg/zanarkand_ffmpeg.py`. After the update has been made, save the file. Then, [rebuild the image](#building-the-images).
-
-### Checking if youtube-dl is up to date
-See [Youtube-dl needs updating](#youtube-dl-needs-updating).
-
-### Adding or changing videos that will play during standby
-The list of standby videos are in `standby/`. These videos will be played after a set number of download attempts fail to download a video. The streaming software will randomly pick one of these videos in that directory to play during the downtime. To remove a video from being shown during standby, simply delete the video. To add a video to the directory, see [Downloading using a playlist](#downloading-using-a-playlist) or 
-[Downloading a specific video](#downloading-a-specific-video). 
-** PLEASE NOTE ** - When downloading a standby video, please make sure to add the `--output /opt/zanarkand/standby/%(title)s` option to the command. This will make sure the downloaded video will have the proper name.
-
-### Changing the currently streaming video to play another video
-Update `current_status.yml` to look like the following format:
-```yaml
-game: FFVII
-episode: 2
-loop: 1
-position: 1
-```
-The order of the options may be different. The two options worth noting are `game` and `position`. The `game` option **has to match the game listed under `sections` in `config.yml`**. The `position` option refers to the order position we are in the stream. **FFVII** is the first game listed under `order` in `config.yml`, so it's listed as `position: 1`. This helps if there are any duplicate entries in `order`, like **FFX**. So if we were to update this file to play FFX after FFIX, episode 20, loop 1, we would make the following update:
-```yaml
-game: FFX
-episode: 20
-loop: 1
-position: 8
-```
-since that specific instance of **FFX** is the **8th** entry under `order`. Once the update to the current status file has been made, [restart the stream](#restart-the-stream).
 
 ## Controlling the stream
 The stream is being run by the `docker` software. Docker uses the images defined in this github repository. This images contains all of the required software that is needed in order to run the stream. The docker images will only be updated in a developement environment, and the production server will rebuild the image locally. In order to run the following commands, your user account needs to be in the `docker` group on the server. If your user is not in the group, run the command `sudo usermod -aG docker <your username>`.
@@ -188,8 +144,13 @@ There are other containers that get automatically created and deleted as needed:
 The `ytdl` containers are not always listed, because the software is not always downloading episodes; it's created when needed (like at the start of each episode). 
 
 If you want to specifically stop a container from running, say you want to stop the current episode from being played, there's an easy command to do it:
+```console
+$ docker container ls -a
 ```
-docker container stop <container name>
+to list the containers. The names are the last column on each line.
+To stop a container:
+```console
+$ docker container stop <container name>
 ```
 This will stop any container listed. Most containers are configured to be deleted after they've stopped, except for the main `zanarkand` container and the `ffmpeg_initial/longer_standby` containers.
 
@@ -237,6 +198,50 @@ or, if you want a live feed of the logs
 ```console
 docker container logs -f zanarkand
 ```
+
+## Common Tasks
+### Changing the overlay
+The overlay file is hardcoded to be `resources/overlay.png`. In order to make an update to that file, one needs to copy the file off the server, make the update, and put the file back onto the server in the correct location. A common program that can be used to transfer the file on or off the server is [WinSCP](https://winscp.net/eng/index.php). Once you enter in the server IP address and proper credentials, you can navigate to the file and transfer it to/from desktop. Once the overlay file has been updated, it will be applied to the next video in the stream.
+
+### Changing the stream quality
+The `ffmpeg` software can be tweaked to change the quality of the streaming video. The options with their default values are defined in `docker-compose.yml`. They can be either changed in that file or overridden in `docker-compose.override.yml` by adding the entry under `environment` (like how it is in `docker-compose.yml`). The most commong setting to change is the `preset` option. The `crf`, `groupofpictures` and some of the bitrate options are also configurable to the quality of the stream. [This ffmpeg link](https://trac.ffmpeg.org/wiki/Encode/H.264) shows the different values that can be used.
+
+Another way to change the stream quality is to update the `videoformatid` and `audioformatid` options under `sections` section in `config.yml`. Each video or playlist has an option to specify the video or audio quality. Check out [this section](#view-all-of-the-formats-available-for-a-video) on how to option the types of video and audio formats available for each video or playlist.
+
+If any of these values are updated, you need to [restart the stream](#restart-the-stream-controller).
+
+### Change the stream schedule
+The stream schedule is configured under the `order` section of `resources/config.yml`. Update the value as needed, but make sure that each entry in `order` **matches up with an entry under `sections`**. If there is something in `order` that does NOT match up with an entry in `sections`, the stream will not be able to start properly.
+
+Once the update to the order has been made, [restart the stream](#restart-the-stream-controller).
+
+### Changing the standby text
+I should really make the standby text configurable, but for now it's hardcoded into the stream software. To update the text, one needs to edit the stream software file (`zanarkand.py`) which is located in `ffmpeg/zanarkand_ffmpeg.py`. After the update has been made, save the file. Then, [rebuild the image](#building-the-images).
+
+### Checking if youtube-dl is up to date
+See [Youtube-dl needs updating](#youtube-dl-needs-updating).
+
+### Adding or changing videos that will play during standby
+The list of standby videos are in `standby/`. These videos will be played after a set number of download attempts fail to download a video. The streaming software will randomly pick one of these videos in that directory to play during the downtime. To remove a video from being shown during standby, simply delete the video. To add a video to the directory, see [Downloading using a playlist](#downloading-using-a-playlist) or 
+[Downloading a specific video](#downloading-a-specific-video). 
+** PLEASE NOTE ** - When downloading a standby video, please make sure to add the `--output /opt/zanarkand/standby/%(title)s` option to the command. This will make sure the downloaded video will have the proper name.
+
+### Changing the currently streaming video to play another video
+Update `current_status.yml` to look like the following format:
+```yaml
+game: FFVII
+episode: 2
+loop: 1
+position: 1
+```
+The order of the options may be different. The two options worth noting are `game` and `position`. The `game` option **has to match the game listed under `sections` in `config.yml`**. The `position` option refers to the order position we are in the stream. **FFVII** is the first game listed under `order` in `config.yml`, so it's listed as `position: 1`. This helps if there are any duplicate entries in `order`, like **FFX**. So if we were to update this file to play FFX after FFIX, episode 20, loop 1, we would make the following update:
+```yaml
+game: FFX
+episode: 20
+loop: 1
+position: 8
+```
+since that specific instance of **FFX** is the **8th** entry under `order`. Once the update to the current status file has been made, [restart the stream](#restart-the-stream).
 
 ## Helpful commands
 ### Using Youtube-DL
