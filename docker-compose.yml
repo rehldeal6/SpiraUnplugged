@@ -2,11 +2,34 @@ version: '3.8'
 
 services:
   zanarkand:
-    image: rehldeal/zanarkand:latest
+    image: zanarkand
     container_name: zanarkand
     restart: on-failure
     build:
-      context: .
+      context: ./zanarkand
     volumes:
-      - .:/opt/zanarkand/
-    
+      - ./media:/media
+      - ./resources:/resources
+      - ./standby:/standby
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DISCORD_WEBHOOK=https://discordapp.com/api/webhooks/639261337503137799/njlDSkXJ9HVNp88fYq5an0mcy9i1K50kn-a3iKd1ye1lpis9XOF6AmnLS_pBsPyfsBFR
+      - MAX_DOWNLOAD_ATTEMPTS=5
+      - NUMBER_OF_DOWNLOADS=3
+      - FFMPEG_VIEWPORT_WIDTH=1760
+      - FFMPEG_VIEWPORT_HEIGHT=990
+      - FFMPEG_VIEWPORT_X=0
+      - FFMPEG_VIEWPORT_Y=90
+      - FFMPEG_RESOLUTION_WIDTH=1920
+      - FFMPEG_RESOLUTION_HEIGHT=1080
+      - FFMPEG_FORMAT=flv
+      - FFMPEG_VCODEC=libx264
+      - FFMPEG_ACODEC=libmp3lame
+      - FFMPEG_MINRATE=5000K
+      - FFMPEG_MAXRATE=6000K
+      - FFMPEG_BUFSIZE=12000K
+      - FFMPEG_CRF=18
+      - FFMPEG_PRESET=superfast
+      - FFMPEG_AUDIO_BITRATE=128k
+      - FFMPEG_AR=44100 # Audio Frequency
+      - FFMPEG_G=30     # Group of Pictures

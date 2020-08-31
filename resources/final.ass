@@ -1,0 +1,16 @@
+﻿[Script Info]
+Title: Zanarkand overlay
+ScriptType: v4.00+
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+YCbCr Matrix: TV.601
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Stream,Agency FB,30,&H00FFFFFF,&H0000FFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,2,2,2,10,10,10,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:05.00,Stream,,0,0,10,,{\c&H7F7F7F&\fscx115\fscy115\pos(960,85)}FFVII -> FFVIIR -> FFVII -> FFX -> {\c&H00FFFF&\fscx130\fscy130}FFVIII (Ep 66/76 Loop 2/2){\c&H7F7F7F&\u0\fscx115\fscy115} -> FFX -> FFIX -> FFX Pbirdman Mod -> FFX-2 -> FFXII -> FFX -> FFXIII -> FFXIII-2 -> FFXIII-3 -> FFX -> FFX-2 -> FFXV

@@ -1,0 +1,7 @@
+version: '3.8'
+
+services:
+  zanarkand:
+    environment:
+      - YOUTUBE_KEY=y9he-1x1j-40sw-0ugy
+    

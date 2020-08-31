@@ -1,60 +1,23 @@
-youtube_key: 32vs-4k2f-wrjz-epcs
-current_status: /opt/zanarkand/current_status.yml
-initialstandbyvideo: /opt/zanarkand/standby/standby.mkv
-numberofdownloads: 3
-downloadattempts: 5
-faileddownloadwait: 60
-overlay: /opt/zanarkand/resources/1080overlay.png
-standbydirectory: /opt/zanarkand/standby/
-mediadirectory: /opt/zanarkand/media/
-discordwebhook: https://discordapp.com/api/webhooks/639261337503137799/njlDSkXJ9HVNp88fYq5an0mcy9i1K50kn-a3iKd1ye1lpis9XOF6AmnLS_pBsPyfsBFR
-
-ffmpeg:
-  preset: superfast
-  crf: 18
-  audiobitrate: 128k
-  audiofrequeny: 44100
-  audiocodec: libmp3lame
-  videocodec: libx264
-  groupofpictures: 30
-  minbitrate: 5000K
-  maxbitrate: 6000K
-  bufsize: 12000K
-  resolutionheight: 1080
-  resolutionwidth: 1920
-  viewportwidth: 1760
-  viewportheight: 990
-  viewportx: 0
-  viewporty: 90
-  format: flv
-  text:
-    font: agency-fb-bold
-    fontsize: 35
-    fontcolor: yellow
-    x: 5
-    y: 52
-  subtitles:
-    template: /opt/zanarkand/resources/template.ass
-    final: /opt/zanarkand/resources/current.ass
-
 order:
  - FFVII            # 1
- - FFX              # 2
- - FFVIII           # 3
+ - FFVIIR           # 2
+ - FFVII            # 3
  - FFX              # 4
- - FFIX             # 5
- - FFX Pbirdman Mod # 6
- - FFX-2            # 7
- - Intermission     # 8
- - FFXII            # 9
- - FFX              # 10
- - FFXIII           # 11
- - FFXIII-2         # 12
- - FFXIII-3         # 13
- - FFX              # 13
- - FFX-2            # 14
- - FFXV             # 15
- - Birthday         # 16
+ - FFVIII           # 5
+ - FFX              # 6
+ - FFIX             # 7
+ - FFX Pbirdman Mod # 8
+ - FFX-2            # 9
+ - Intermission     # 10
+ - FFXII            # 11
+ - FFX              # 12
+ - FFXIII           # 13
+ - FFXIII-2         # 14
+ - FFXIII-3         # 15
+ - FFX              # 16
+ - FFX-2            # 17
+ - FFXV             # 18
+ - Birthday         # 19
 
   #Template:
   #<Name of Game/Video> (NEEDS to match entry in 'order' section)       **REQUIRED**
@@ -71,16 +34,24 @@ sections:
   FFVII:
     type: playlist
     id: PL9wpzJw8GKy6jduVjw_TFkQleVQVQmjZ1
-    loops: 2
+    loops: 1
     beginning: 2
+    ending: 90
+  FFVIIR:
+    type: playlist
+    id: PL9wpzJw8GKy5NkqIPTrpBdKIq7TlEgdVB
+    loops: 1
+    ending: 75
   FFVIII:
     type: playlist
     id: PL9wpzJw8GKy7-VIz9_kYjaXYyqEerexxo
     loops: 2
+    ending: 76
   FFIX:
     type: playlist
     id: PL9wpzJw8GKy7_vGHBnsIf99WoE1PV8fib
     loops: 2
+    ending: 83
   FFX:
     type: playlist
     id: PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps
@@ -104,6 +75,7 @@ sections:
       - 95
       - 96
       - 97
+    ending: 104
   FFXII:
     type: playlist
     id: PL9wpzJw8GKy4PLI_hOOTLIRbZgc380SoJ
@@ -114,18 +86,22 @@ sections:
     id: PL9wpzJw8GKy5MRpDdYVvssMRgGjVLlA0K
     loops: 2
     videoformatid: 137
+    ending: 95
   FFXIII-2:
     type: playlist
     id: PL9wpzJw8GKy4XCYWG7RyNv62Y24vgxVcR
     videoformatid: 137
+    ending: 73
   FFXIII-3:
     type: playlist
     id: PL9wpzJw8GKy5X2REI5pL7ipD8anVgAnsG
     videoformatid: 137
+    ending: 92
   FFXV:
     type: playlist
     id: PL9wpzJw8GKy7Uh35q-_CDXJv_4jf4G8du
     videoformatid: 137
+    ending: 77
   Intermission:
     type: video
     id: pUVs2fly-is
@@ -135,4 +111,4 @@ sections:
   FFX Pbirdman Mod:
     type: playlist
     id: PL9wpzJw8GKy7RblnEe2iU-GsWrdpdedKD
-    end: 44
+    ending: 44
