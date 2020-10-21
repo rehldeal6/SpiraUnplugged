@@ -121,10 +121,10 @@ class Stream:
 
         self.previous_episode = self.episode
         self.previous_media = self.media
-        if self.episode < self.sections[self.media].get("ending"):
+        if self.episode < self.sections[self.media].get("ending", 1):
             self.episode += 1
             while (self.episode in self.sections[self.media].get("exclude", [])
-                   and self.episode < self.sections[self.media].get("ending")):
+                   and self.episode < self.sections[self.media].get("ending", 1)):
                 self.episode += 1
         else:
             if self.loop < self.sections[self.media].get("loops", 1):
@@ -153,10 +153,10 @@ class Stream:
         download_loop = self.loop
         download_position = self.position
         for _ in range(1, self.download_number + 1):
-            if download_episode < self.sections[download_media].get("ending"):
+            if download_episode < self.sections[download_media].get("ending", 1):
                 download_episode += 1
                 while (download_episode in self.sections[download_media].get("exclude", [])
-                       and download_episode < self.sections[download_media].get("ending")):
+                       and download_episode < self.sections[download_media].get("ending", 1)):
                     download_episode += 1
             else:
                 if download_loop < self.sections[download_media].get("loops", 1):
@@ -298,7 +298,7 @@ class Stream:
 
     def update_status(self):
         # Update status
-        with open("/resources/current_status.yml", 'w') as write_status:
+        with open("/resources/status.yml", 'w') as write_status:
             safe_dump({'game': self.media, 'position': self.position, 'episode': self.episode, 'loop': self.loop},
                       write_status,
                       default_flow_style=False)
