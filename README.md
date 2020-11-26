@@ -272,8 +272,8 @@ docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --playlist-i
 #### Downloading a specific video
 The use of docker containers made it a bit longer command to run, but since this is rarely used it's fine. This command also needs to be run within the github repository directory.
 ```console
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestvideo --output /opt/zanarkand/media/<game-name>-E<episode-number>.v <video URL>"
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestaudio --output /opt/zanarkand/media/<game-name>-E<episode-number>.a <video URL>"
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestvideo --output /media/<game-name>-E<episode-number>.v <video URL>"
+docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestaudio --output /media/<game-name>-E<episode-number>.a <video URL>"
 ```
 Example command to download Episode 10 of the FFX playlist in the format the stream needs:
 ```console
