@@ -80,27 +80,27 @@ sections:
     type: playlist
     id: PL9wpzJw8GKy4PLI_hOOTLIRbZgc380SoJ
     ending: 132
-    videoformatid: 137
+    #videoformatid: 137
   FFXIII:
     type: playlist
     id: PL9wpzJw8GKy5MRpDdYVvssMRgGjVLlA0K
     loops: 2
-    videoformatid: 137
+    #videoformatid: 137
     ending: 95
   FFXIII-2:
     type: playlist
     id: PL9wpzJw8GKy4XCYWG7RyNv62Y24vgxVcR
-    videoformatid: 137
+    #videoformatid: 137
     ending: 73
   FFXIII-3:
     type: playlist
     id: PL9wpzJw8GKy5X2REI5pL7ipD8anVgAnsG
-    videoformatid: 137
+    #videoformatid: 137
     ending: 92
   FFXV:
     type: playlist
     id: PL9wpzJw8GKy7Uh35q-_CDXJv_4jf4G8du
-    videoformatid: 137
+    #videoformatid: 137
     ending: 77
   Intermission:
     type: video

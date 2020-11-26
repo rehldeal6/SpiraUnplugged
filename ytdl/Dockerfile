@@ -1,11 +1,11 @@
-FROM python@sha256:f8ada9f1093eb4d5301a874cffd3e800761047cbdaae1772f3aaf79abf4082e3
+FROM python@sha256:af555a32c066d814736ce1068817749fbafdf0b88461f970c3df6f7bf110d1d2
 
 WORKDIR /zanarkand
 
 COPY requirements.txt .
+COPY zanarkand_ytdl.sh .
 
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt && \
+    chmod 0777 /zanarkand/zanarkand_ytdl.sh
 
-COPY zanarkand_ytdl.py .
-
-ENTRYPOINT ["python", "/zanarkand/zanarkand_ytdl.py"]
+ENTRYPOINT ["/zanarkand/zanarkand_ytdl.sh"]

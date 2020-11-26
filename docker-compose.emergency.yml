@@ -1,0 +1,7 @@
+version: '3.8'
+
+services:
+  zanarkand:
+    image: zanarkand:emergency
+    volumes:
+      - ./resources/config.emergency.yml:/resources/config.yml
