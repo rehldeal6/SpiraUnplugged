@@ -1,23 +1,24 @@
 order:
- - FFVII            # 1
- - FFVIIR           # 2
+ - FFVI             # 1
+ - FFX              # 2
  - FFVII            # 3
- - FFX              # 4
- - FFVIII           # 5
- - FFX              # 6
- - FFIX             # 7
- - FFX Pbirdman Mod # 8
- - FFX-2            # 9
- - Intermission     # 10
- - FFXII            # 11
- - FFX              # 12
- - FFXIII           # 13
- - FFXIII-2         # 14
- - FFXIII-3         # 15
- - FFX              # 16
- - FFX-2            # 17
- - FFXV             # 18
- - Birthday         # 19
+ - FFVIIR           # 4
+ - FFX              # 5
+ - FFVIII           # 6
+ - FFX              # 7
+ - FFIX             # 8
+ - FFX Pbirdman Mod # 9
+ - FFX-2            # 10
+ - Intermission     # 11
+ - FFXII            # 12
+ - FFX              # 13
+ - FFXIII           # 14
+ - FFXIII-2         # 15
+ - FFXIII-3         # 16
+ - FFX              # 17
+ - FFX-2            # 18
+ - FFXV             # 19
+ - Birthday         # 20
 
   #Template:
   #<Name of Game/Video> (NEEDS to match entry in 'order' section)       **REQUIRED**
@@ -31,16 +32,21 @@ order:
   #  audioformatid: YT audio format ID to download                      DEFAULT: BESTAUDIO
 
 sections:
+  FFVI:
+    type: playlist
+    id: PL9wpzJw8GKy6z6EOuF1RvI87BmzZQ47wI
+    loops: 2
+    ending: 81
   FFVII:
     type: playlist
-    id: PL9wpzJw8GKy6jduVjw_TFkQleVQVQmjZ1
-    loops: 1
-    beginning: 2
-    ending: 90
+    id: PL9wpzJw8GKy5yXTwcD5nfu_ZLgn9m1MuN
+    loops: 2
+    #beginning: 2
+    ending: 89
   FFVIIR:
     type: playlist
     id: PL9wpzJw8GKy5NkqIPTrpBdKIq7TlEgdVB
-    loops: 1
+    loops: 2
     ending: 88
   FFVIII:
     type: playlist
@@ -58,24 +64,24 @@ sections:
     ending: 133
   FFX-2:
     type: playlist
-    id: PL9wpzJw8GKy4iBmZcKF0HYd8xF0FmBueF
-    exclude:
-      - 83
-      - 84
-      - 85
-      - 86
-      - 87
-      - 88
-      - 89
-      - 90
-      - 91
-      - 92
-      - 93
-      - 94
-      - 95
-      - 96
-      - 97
-    ending: 104
+    id: PL9wpzJw8GKy6M-TSsjPp5fuVBHJ3FBglQ
+    #exclude:
+    #  - 83
+    #  - 84
+    #  - 85
+    #  - 86
+    #  - 87
+    #  - 88
+    #  - 89
+    #  - 90
+    #  - 91
+    #  - 92
+    #  - 93
+    #  - 94
+    #  - 95
+    #  - 96
+    #  - 97
+    ending: 89
   FFXII:
     type: playlist
     id: PL9wpzJw8GKy4PLI_hOOTLIRbZgc380SoJ

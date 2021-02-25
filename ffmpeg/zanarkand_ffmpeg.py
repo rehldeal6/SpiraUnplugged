@@ -14,8 +14,9 @@ def stream_episode():
     overlay = ffmpeg.input('/resources/overlay.png')\
                     .filter('ass',
                             filename='/resources/final.ass')
-    video = ffmpeg.input('/media/{}-E{}.v'.format(os.environ['FFMPEG_PLAYLIST'],
-                                                  os.environ['FFMPEG_EPISODE']),
+    video = ffmpeg.input('/media/{}/{}-E{}.v'.format(os.environ['FFMPEG_PLAYLIST'],
+                                                     os.environ['FFMPEG_PLAYLIST'],
+                                                     os.environ['FFMPEG_EPISODE']),
                          re=None)\
                   .video\
                   .filter('scale',
@@ -27,8 +28,9 @@ def stream_episode():
                           os.environ['FFMPEG_VIEWPORT_X'],
                           os.environ['FFMPEG_VIEWPORT_Y'])\
                   .overlay(overlay)
-    audio = ffmpeg.input('/media/{}-E{}.a'.format(os.environ['FFMPEG_PLAYLIST'],
-                                                  os.environ['FFMPEG_EPISODE']),
+    audio = ffmpeg.input('/media/{}/{}-E{}.a'.format(os.environ['FFMPEG_PLAYLIST'],
+                                                     os.environ['FFMPEG_PLAYLIST'],
+                                                     os.environ['FFMPEG_EPISODE']),
                          re=None)
     logging.info('Streaming episode %s-E%s', os.environ['FFMPEG_PLAYLIST'], os.environ['FFMPEG_EPISODE'])
     try:

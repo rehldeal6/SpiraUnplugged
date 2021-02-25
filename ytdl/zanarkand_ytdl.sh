@@ -7,7 +7,7 @@ do
     else
         FORMAT=${YTDL_VIDEOID:-bestvideo}
     fi
-    FILENAME="/media/$YTDL_PLAYLIST-E$YTDL_EPISODE.$EXTENSION"
+    FILENAME="/media/$YTDL_PLAYLIST/$YTDL_PLAYLIST-E$YTDL_EPISODE.$EXTENSION"
     if [[ -f $FILENAME.part ]]; then
         echo "$FILENAME is partially downloaded. Removing"
         rm -f $FILENAME

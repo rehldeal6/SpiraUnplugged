@@ -40,7 +40,7 @@ def media_files_exist(media, episode):
     '''
     Check if both audio and video file exists for a particular episode of media
     '''
-    return (os.path.exists("/media/{}-E{}.v".format(media, episode)) and os.path.exists("/media/{}-E{}.a".format(media, episode)))
+    return (os.path.exists("/media/{}/{}-E{}.v".format(media, media, episode)) and os.path.exists("/media/{}/{}-E{}.a".format(media, media, episode)))
 
 class Stream:
     '''
@@ -113,11 +113,11 @@ class Stream:
         # Delete previous episodes
         if self.previous_media and self.previous_episode:
             remove_containers("ffmpeg_{}_E{}".format(self.previous_media, self.previous_episode))
-            try:
-                os.remove("/media/{}-E{}.v".format(self.previous_media, self.previous_episode))
-                os.remove("/media/{}-E{}.a".format(self.previous_media, self.previous_episode))
-            except OSError as err:
-                logging.error("Could not remove the media files for %s-E%s: %s", self.media, self.episode, err)
+            #try:
+            #    os.remove("/media/{}-E{}.v".format(self.previous_media, self.previous_episode))
+            #    os.remove("/media/{}-E{}.a".format(self.previous_media, self.previous_episode))
+            #except OSError as err:
+            #    logging.error("Could not remove the media files for %s-E%s: %s", self.media, self.episode, err)
 
         self.previous_episode = self.episode
         self.previous_media = self.media
