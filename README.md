@@ -12,7 +12,7 @@ After Berk and I have debugged some of the issues that we had to deal with, we h
 ## Components
 There are four main pieces of software that this program uses that are essential for the stream:
 1. [ffmpeg](https://www.ffmpeg.org/) - "A complete, cross-platform solution to record, convert and stream audio and video."
-2. [youtube-dl](https://ytdl-org.github.io/youtube-dl/index.html) - "A command-line program to download videos from YouTube.com"
+2. [yt-dlp](https://github.com/yt-dlp/yt-dlp) - "A command-line program to download videos from YouTube.com"
 3. zanarkand.py - The software I wrote that brings everything together.
 4. [docker](https://www.docker.com/resources/what-container) - Software bundling
 
@@ -218,7 +218,7 @@ Once the update to the order has been made, [restart the stream](#restart-the-st
 ### Changing the standby text
 I should really make the standby text configurable, but for now it's hardcoded into the stream software. To update the text, one needs to edit the stream software file (`zanarkand.py`) which is located in `ffmpeg/zanarkand_ffmpeg.py`. After the update has been made, save the file. Then, [rebuild the image](#building-the-images).
 
-### Checking if youtube-dl is up to date
+### Checking if yt-dlp is up to date
 See [Youtube-dl needs updating](#youtube-dl-needs-updating).
 
 ### Adding or changing videos that will play during standby
@@ -260,35 +260,35 @@ If you need to download a specific video, here's what you can do:
 #### Downloading using a playlist
 The use of docker containers made it a bit longer command to run, but since this is rarely used it's fine. This command also needs to be run within the github repository directory.
 ```console
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --playlist-items <episode-number> --format bestvideo --output "/media/<game-name>-E<episode-number>.v <playlist URL>"
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --playlist-items <episode-number> --format bestaudio --output "/media/<game-name>-E<episode-number>.a <playlist URL>"
+docker run --rm -v $(pwd)/media:/media --entrypoint yt-dlp ytdl --playlist-items <episode-number> --format bestvideo --output "/media/<game-name>-E<episode-number>.v <playlist URL>"
+docker run --rm -v $(pwd)/media:/media --entrypoint yt-dlp ytdl --playlist-items <episode-number> --format bestaudio --output "/media/<game-name>-E<episode-number>.a <playlist URL>"
 ```
 Example command to download Episode 10 of the FFX playlist in the format the stream needs:
 ```console
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --playlist-items 10 --format bestvideo --output "/media/FFX-E10.v https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps"
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --playlist-items 10 --format bestaudio --output "/media/FFX-E10.a https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps"
+docker run --rm -v $(pwd)/media:/media --entrypoint yt-dlp ytdl --playlist-items 10 --format bestvideo --output "/media/FFX-E10.v https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps"
+docker run --rm -v $(pwd)/media:/media --entrypoint yt-dlp ytdl --playlist-items 10 --format bestaudio --output "/media/FFX-E10.a https://www.youtube.com/playlist?list=PL9wpzJw8GKy74rLqQv7OH9v94Hj8qQWps"
 ```
 
 #### Downloading a specific video
 The use of docker containers made it a bit longer command to run, but since this is rarely used it's fine. This command also needs to be run within the github repository directory.
 ```console
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestvideo --output /media/<game-name>-E<episode-number>.v <video URL>"
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestaudio --output /media/<game-name>-E<episode-number>.a <video URL>"
+docker run --rm -v $(pwd)/media:/media --entrypoint yt-dlp ytdl --format bestvideo --output /media/<game-name>-E<episode-number>.v <video URL>"
+docker run --rm -v $(pwd)/media:/media --entrypoint yt-dlp ytdl --format bestaudio --output /media/<game-name>-E<episode-number>.a <video URL>"
 ```
 Example command to download Episode 10 of the FFX playlist in the format the stream needs:
 ```console
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestvideo --output /media/FFX-E10.v https://www.youtube.com/watch?v=xoLBwYgcsbk"
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format bestaudio --output /media/FFX-E10.a https://www.youtube.com/watch?v=xoLBwYgcsbk"
+docker run --rm -v $(pwd)/media:/media --entrypoint yt-dlp ytdl --format bestvideo --output /media/FFX-E10.v https://www.youtube.com/watch?v=xoLBwYgcsbk"
+docker run --rm -v $(pwd)/media:/media --entrypoint yt-dlp ytdl --format bestaudio --output /media/FFX-E10.a https://www.youtube.com/watch?v=xoLBwYgcsbk"
 ```
 
 #### View all of the formats available for a video
 Youtube uses its own specific video format IDs to use for the `--format` option. To view the formats available for a video, run the following command:
 ```console
-docker run --rm --entrypoint youtube-dl ytdl -F <video URL>
+docker run --rm --entrypoint yt-dlp ytdl -F <video URL>
 ```
 Example:
 ```console
-docker run --rm --entrypoint youtube-dl ytdl -F https://www.youtube.com/watch?v=xoLBwYgcsbk
+docker run --rm --entrypoint yt-dlp ytdl -F https://www.youtube.com/watch?v=xoLBwYgcsbk
 [youtube] xoLBwYgcsbk: Downloading webpage
 [youtube] xoLBwYgcsbk: Downloading video info webpage
 [info] Available formats for xoLBwYgcsbk:
@@ -316,15 +316,15 @@ format code  extension  resolution note
 So if we wanted to download a `1920x1080` mp4 video (format code `137`)  and the `m4a` audio (format code `140`), you would do the following (using FFX-E10 as an example):
 
 ```console
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format 137 --output /media/FFX-E10.v https://www.youtube.com/watch?v=xoLBwYgcsbk
-docker run --rm -v $(pwd)/media:/media --entrypoint youtube-dl ytdl --format 140 --output /media/FFX-E10.a https://www.youtube.com/watch?v=xoLBwYgcsbk
+docker run --rm -v $(pwd)/media:/media --entrypoint yt-dlp ytdl --format 137 --output /media/FFX-E10.v https://www.youtube.com/watch?v=xoLBwYgcsbk
+docker run --rm -v $(pwd)/media:/media --entrypoint yt-dlp ytdl --format 140 --output /media/FFX-E10.a https://www.youtube.com/watch?v=xoLBwYgcsbk
 ```
 
 ## Debugging the stream
 This part of the README is designed to grow as we come across problems related to this software. We should document any fixes to the stream here.
 
 ### Youtube-dl needs updating
-The most common issue that we come across is that youtube-dl needs updating. When this happens, the stream fails to download the upcoming episodes. The tech-support discord channel should be notified when this occues and the stream _should_ try to automatically update. If this still fails, the container image needs to be rebuilt. These commands will stop the stream, rebuild the image, and start it back up.
+The most common issue that we come across is that yt-dlp needs updating. When this happens, the stream fails to download the upcoming episodes. The tech-support discord channel should be notified when this occues and the stream _should_ try to automatically update. If this still fails, the container image needs to be rebuilt. These commands will stop the stream, rebuild the image, and start it back up.
 
 ```console
 docker-compose down

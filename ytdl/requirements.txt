@@ -1,1 +1,1 @@
-youtube-dlc
+yt-dlp

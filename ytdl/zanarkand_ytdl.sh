@@ -15,7 +15,7 @@ do
     if [[ ! -f $FILENAME ]]; then
         echo "Downloading $FILENAME"
         if [[ "${YTDL_TYPE^^}" == "PLAYLIST" ]]; then
-            youtube-dlc \
+            yt-dlp \
             --no-cache-dir \
             --limit-rate 6291456 \
             --format $FORMAT \
@@ -23,7 +23,7 @@ do
             --playlist-items $YTDL_EPISODE \
             https://www.youtube.com/playlist?list=$YTDL_URL
         else
-            youtube-dlc \
+            yt-dlp \
             --no-cache-dir \
             --limit-rate 6291456 \
             --format $FORMAT \
